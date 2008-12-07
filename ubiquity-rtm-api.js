@@ -170,6 +170,11 @@ RTM.template = {
 			+ " <div style=\"padding-top:1px;text-align:right;font-size:0.8em\">"
 			+ "   {if (item.due)}${item.due} - {/if} {if (item.list_name)}${item.list_name}{/if}"
 			+ " </div>"
+			+ "{for note in item.notes}"
+			+ " <div id=\"$(note.id)\" style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
+			+ "   <li>{if (note.title)}${note.title} : {/if}${note.$t}"
+			+ " </div>"
+			+ "{/for}"
 			+ "</div>",
 }
 
@@ -796,7 +801,7 @@ RTM.tasks = function(){
 				}
 			} else {
 				for (var j in taskseries){
-					var ts = taskseries[j];
+					var ts = taskseries[j];				
 					if (ts.task.completed){
 						delete tasks[ts.id];
 					} else {
@@ -1109,76 +1114,6 @@ CmdUtils.CreateCommand({
     	    url = (Utils.trim(url) == "this") ? (CmdUtils.getWindowInsecure().location.href || "") : Utils.trim(url);
 			url = RTM.utils.format_url(url);
 		}
-
-		if (RTM.add_task(taskName, listId, url, priority, tags)){
-			displayMessage(RTM.constants.msg.TASK_ADDED);
-			RTM.tasks.async_update();
-		} else {
-			displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK);
-		}
-	}
-});
-
-CmdUtils.CreateCommand({
-    name: "read-later",
-    synonyms: ["rl"],
-    author: {
-        name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
-        email: "contact@garyhodgson.com"
-    },
-    license: "MPL",
-    icon: "http://www.rememberthemilk.com/favicon.ico",
-    description: "Shortcut to add a RTM task to your inbox with the current URL, and today's date.",
-    takes: {
-    },
-    modifiers: {
-    },
-    preview: function(previewBlock, directObject, mods) {
-		previewBlock.innerHTML = this.description;
-        if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
-            return;
-        }
-                
-		var task = {
-        	id: "",
-			name: "Something to read later.",
-			task: {
-				priority:""
-			},
-			tags: ["read-later"],
-			list_name: "Inbox",
-			overdue:"",
-			url: RTM.utils.format_url(CmdUtils.getWindowInsecure().location.href),
-			due:"now",
-        }
-        
-        var previewData = {
-        	item: task,
-        	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
-        	rootUrl: RTM.constants.url.ROOT_URL,
-		}; 
-
-		var ptemplate = "Add Task:";
-		ptemplate += RTM.template.TASK;
-		
-
-        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
-        
-    },
-    execute: function(directObject, mods) {
-        if (!RTM.check_token()) {
-            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
-			RTM.login();
-            return;
-        }
-        
-        var taskName = "Something to read later. now";
-        var tags = ["read-later"];
-        var priority = null;
-        var listId = RTM.lists.get_list_id("Inbox");
-        var url = RTM.utils.format_url(CmdUtils.getWindowInsecure().location.href);
 
 		if (RTM.add_task(taskName, listId, url, priority, tags)){
 			displayMessage(RTM.constants.msg.TASK_ADDED);
