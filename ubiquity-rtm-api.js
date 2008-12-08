@@ -98,11 +98,14 @@ RTM.constants = {
 		LOGIN_MSG: 'No Authorisation Token found. Press Enter to Login.',
 		LOGGING_IN_MSG: 'No Authorisation Token found. Navigating to RTM for authorisation.',
 		TASK_NAME_REQUIRED: "A task name is required.",
+		NOTE_TEXT_REQUIRED: "A note requires some text.",
 		TASK_ADDED: "Task Added.",
+		TASK_NOTE_ADDED: "Task Note Added.",
 		TASK_DELETED: "Task Deleted.",
 		PROBLEM_DELETING_TASK: "A problem occurred deleting the task.",
 		PROBLEM_ADDING_TASK: "A problem occurred adding the task to RTM.",
 		PROBLEM_PRIORITISING_TASK: "A problem occurred prioritising the task.",
+		PROBLEM_ADDING_TASK_NOTE: "A problem occurred adding a note for the task.",
 	},
 	TEN_MINUTES: 600000,
 	TWENTY_FOUR_HOURS: 86400000,
@@ -170,11 +173,13 @@ RTM.template = {
 			+ " <div style=\"padding-top:1px;text-align:right;font-size:0.8em\">"
 			+ "   {if (item.due)}${item.due} - {/if} {if (item.list_name)}${item.list_name}{/if}"
 			+ " </div>"
-			+ "{for note in item.notes}"
-			+ " <div id=\"$(note.id)\" style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
-			+ "   <li>{if (note.title)}${note.title} : {/if}${note.$t}"
+			+ "{if (item.notes)}"
+			+ "{for note in item.notes.note}"
+			+ " <div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
+			+ "   <li>${note.$t}"
 			+ " </div>"
 			+ "{/for}"
+			+ "{/if}"
 			+ "</div>",
 }
 
@@ -535,6 +540,22 @@ RTM.prioritise_task = function(taskId, seriesId, listId, priority){
             taskseries_id: seriesId,
             timeline: RTM.get_timeline(),
             priority: priority,
+        };
+        
+	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});        
+}
+
+RTM.add_task_note = function(taskId, seriesId, listId, noteText){
+	if (!taskId || !seriesId || !listId  || !noteText){
+		return;
+	}			
+	var apiParams = {
+            list_id: listId,
+            method: "rtm.tasks.notes.add",
+            task_id: taskId,
+            taskseries_id: seriesId,
+            timeline: RTM.get_timeline(),
+            note_text: noteText
         };
         
 	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});        
@@ -1057,7 +1078,6 @@ CmdUtils.CreateCommand({
         }
         
         var defaultListName = RTM.lists.get_list_name(RTM.prefs.get(RTM.constants.pref.DEFAULT_LIST, null))||'Inbox';
-        
 
         var taskName = directObject.summary || null;
         var tags = (mods.tags.text) ? mods.tags.text.split() : [];
@@ -1120,6 +1140,93 @@ CmdUtils.CreateCommand({
 			RTM.tasks.async_update();
 		} else {
 			displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK);
+		}
+	}
+});
+
+CmdUtils.CreateCommand({
+    name: "rtm-add-note",
+    author: {
+        name: "Gary Hodgson",
+        homepage: "http://www.garyhodgson.com/ubiquity",
+        email: "contact@garyhodgson.com"
+    },
+    license: "MPL",
+    icon: "http://www.rememberthemilk.com/favicon.ico",
+    description: "Adds a note to a task in RTM.",
+    takes: {
+        note: noun_arb_text
+    },
+    modifiers: {
+		to: new RtmNounType("Task", RTM.tasks.get_task_names),
+    },
+    preview: function(previewBlock, directObject, mods) {
+		previewBlock.innerHTML = this.description;
+        if (!RTM.check_token()) {
+            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            return;
+        }
+            
+        var note = directObject.summary || null;
+        var taskName = mods.to.text || null;
+        var taskId = mods.to.data || null;
+
+        var task = RTM.tasks.get_task(taskId);
+        
+        if (!task) {
+			task = {
+	        	id: "",
+				name: taskName,
+				task: {priority:""},
+				tags: [],
+				list_name: "",
+				overdue:"",
+				url: "",
+				due:"",
+        	};
+    	}
+    
+        var previewData = {
+        	item: task,
+        	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
+        	rootUrl: RTM.constants.url.ROOT_URL,
+        	newNote: note,
+		}; 
+
+		var ptemplate = "Add Task Note:";
+		ptemplate += RTM.template.TASK;
+		ptemplate += " <div style=\"padding-left:2px;margin-left:26px;text-align:left;font-size:0.8em\">"
+		ptemplate += "  <li><b>${newNote}</b>"
+		ptemplate += " </div>"		
+
+        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
+        
+    },
+    execute: function(directObject, mods) {
+        if (!RTM.check_token()) {
+            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+			RTM.login();
+            return;
+        }
+        if (!directObject.text){
+        	displayMessage(RTM.constants.msg.NOTE_TEXT_REQUIRED);
+            return;
+        }
+        
+        var note = directObject.text || null;
+        var taskId = mods.to.data || null;
+		var taskSeries = RTM.tasks.get_task(taskId);
+        
+        if (!taskSeries){
+        	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
+            return;
+        }
+
+		if (RTM.add_task_note(taskSeries.task.id, taskSeries.id, taskSeries.list_id, note)){
+			displayMessage(RTM.constants.msg.TASK_NOTE_ADDED);
+			RTM.tasks.async_update();
+		} else {
+			displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK_NOTE);
 		}
 	}
 });
