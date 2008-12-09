@@ -4,7 +4,7 @@
  * homepage: "http://www.garyhodgson.com/ubiquity/",
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.3.4" (unreleased)
+ * version: "0.3.4" 
 */
 
 /**
@@ -101,11 +101,17 @@ RTM.constants = {
 		NOTE_TEXT_REQUIRED: "A note requires some text.",
 		TASK_ADDED: "Task Added.",
 		TASK_NOTE_ADDED: "Task Note Added.",
+		TASK_MOVED: "Task Moved.",
 		TASK_DELETED: "Task Deleted.",
+		TASK_POSTPONED: "Task Postponed.",
+		TASK_COMPLETED: "Task Completed.",
 		PROBLEM_DELETING_TASK: "A problem occurred deleting the task.",
 		PROBLEM_ADDING_TASK: "A problem occurred adding the task to RTM.",
+		PROBLEM_MOVING_TASK: "A problem occurred moving the task.",
 		PROBLEM_PRIORITISING_TASK: "A problem occurred prioritising the task.",
 		PROBLEM_ADDING_TASK_NOTE: "A problem occurred adding a note for the task.",
+		PROBLEM_POSTPONING_TASK: "A problem occurred postponing the task.",
+		PROBLEM_COMPLETING_TASK: "A problem occurred completing the task.",
 	},
 	TEN_MINUTES: 600000,
 	TWENTY_FOUR_HOURS: 86400000,
@@ -173,13 +179,13 @@ RTM.template = {
 			+ " <div style=\"padding-top:1px;text-align:right;font-size:0.8em\">"
 			+ "   {if (item.due)}${item.due} - {/if} {if (item.list_name)}${item.list_name}{/if}"
 			+ " </div>"
-			+ "{if (item.notes.note.length)}"
+			+ "{if (item.notes && item.notes.note && item.notes.note.length)}"
 			+ "	{for note in item.notes.note}"
 			+ " 	<div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
 			+ "			<li>${note.$t}"
 			+ " 	</div>"
 			+ "	{/for}"
-			+ "{elseif (item.notes) }"
+			+ "{elseif (item.notes && item.notes.note) }"
 			+ "	<div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
 			+ "		<li>${item.notes.note.$t}"
 			+ "	</div>"
@@ -464,7 +470,7 @@ RTM.get_new_auth_token = function(frob) {
        	RTM.get_settings();		
 			
        	RTM.lists.update();
-		RTM.tasks.force_update();
+		RTM.tasks.force_update_all();
  
 		return RTM.prefs.get(RTM.constants.pref.AUTH_TOKEN, null);
 	});
@@ -563,6 +569,50 @@ RTM.add_task_note = function(taskId, seriesId, listId, noteText){
         };
         
 	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});        
+
+}
+
+RTM.move_task = function(taskId, seriesId, currentlistId,  targetListId) {
+	if (!taskId || !seriesId || !currentlistId || !targetListId){
+		return;
+	}			
+	var apiParams = {
+		method: "rtm.tasks.moveTo",
+		task_id: taskId,
+		taskseries_id: seriesId,
+		timeline: RTM.get_timeline(),
+		from_list_id: currentlistId,
+		to_list_id: targetListId, 
+	};       
+	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});         
+}
+
+RTM.postpone_task = function(taskId, seriesId, listId) {
+	if (!taskId || !seriesId || !listId){
+		return;
+	}
+    var apiParams = {
+        list_id: listId,
+        method: "rtm.tasks.postpone",
+        task_id: taskId,
+        taskseries_id: seriesId,
+        timeline: RTM.get_timeline(),
+    };    
+	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});
+}	
+    	
+RTM.complete_task = function(taskId, seriesId, listId) {
+	if (!taskId || !seriesId || !listId){
+		return;
+	}
+    var apiParams = {
+        list_id: listId,
+        method: "rtm.tasks.complete",
+        task_id: taskId,
+        taskseries_id: seriesId,
+        timeline: RTM.get_timeline(),
+    };    
+	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});
 }
 
 RTM.tag_task = function(taskId, seriesId, listId,  tags){
@@ -768,7 +818,7 @@ RTM.tasks = function(){
 		return tasks;
 	}
 	
-	function _update(force, async) {
+	function _update(force, async, markSmartLists) {
 	    if (!RTM.check_token()) {
 	        return null;
 	    }
@@ -794,7 +844,9 @@ RTM.tasks = function(){
 				}
 			}
 
-			tasks = _mark_smart_tasks(tasks, force);
+			if (markSmartLists){
+				tasks = _mark_smart_tasks(tasks, force);
+			}
 			
 			if (!Application.storage.has(RTM.constants.store.TASKS)) { 
 				// show message on very first run
@@ -815,6 +867,48 @@ RTM.tasks = function(){
 		return (async)	? RTM.rtm_call_json_async(apiParams, successCallback) 
 						: RTM.rtm_call_json_sync(apiParams, successCallback);
 	}
+	function _update_list(listId, force, async, markSmartLists) {
+	    if (!RTM.check_token()) {
+	        return;
+	    }
+	    var apiParams = {
+	        method: "rtm.tasks.getList",
+	        list_id: listId
+	    }
+	    if (!force){
+	    	apiParams.last_sync = _lastUpdated;
+    	} else {
+    		// If there is no lastUpdate then we only want to get all the incomplete tasks.
+    		apiParams.filter = "status:incomplete";
+    	}
+
+		var successCallback = function(j){
+			var tasks = Application.storage.get(RTM.constants.store.TASKS, new Object());
+			var t = j.tasks;
+			var list = t.list;
+			var listName = RTM.lists.get_list_name(list.id);
+			
+			if (!RTM.lists.is_smart_list(list.id)){
+				tasks = _add_new_tasks_and_remove_completed_tasks(tasks, list);	
+				tasks = _remove_deleted_tasks(tasks,list.deleted);
+			}
+
+			if (markSmartLists){
+				tasks = _mark_smart_tasks(tasks, force);
+			}
+
+			Application.storage.set(RTM.constants.store.TASKS, tasks);
+			_tasks = tasks;
+			
+			_update_task_names();
+			_update_tag_list();
+			return _tasks;
+		};
+		
+		return (async)	? RTM.rtm_call_json_async(apiParams, successCallback) 
+						: RTM.rtm_call_json_sync(apiParams, successCallback);
+	}
+	
 	function _add_new_tasks_and_remove_completed_tasks(tasks, list){
 		if (list.taskseries){
 			var taskseries = list.taskseries;
@@ -826,7 +920,7 @@ RTM.tasks = function(){
 				}
 			} else {
 				for (var j in taskseries){
-					var ts = taskseries[j];				
+					var ts = taskseries[j];
 					if (ts.task.completed){
 						delete tasks[ts.id];
 					} else {
@@ -885,17 +979,20 @@ RTM.tasks = function(){
 		format_task: function(taskseries, listId){
 			return _format_task(taskseries, listId);
 		},		
-		async_update: function(){
-			return _update(false, true);
+		async_update_all: function(){
+			return _update(false, true, true);
 		},
-		sync_update: function(){
-			return _update(false, false);
+		sync_update_all: function(){
+			return _update(false, false, true);
 		},
-		force_update: function (){
-			return _update(true, false);
+		sync_update_list: function(listId){
+			return _update_list(listId, false, false, false);
+		},
+		force_update_all: function (){
+			return _update(true, false, true);
 		},
 		get_tasks: function(update) {
-			return  (update) ? _update(false) : _tasks;
+			return  (update) ? _update(false, false, true) : _tasks;
 		},
 		get_task_names: function() {
 			return _taskNames;
@@ -978,7 +1075,7 @@ CmdUtils.CreateCommand({
             return;
         }
 		RTM.lists.update();
-		RTM.tasks.force_update();
+		RTM.tasks.force_update_all();
         displayMessage("Refresh Complete!");        
        },
     preview: function(previewBlock, directObject, mods) {
@@ -1082,7 +1179,7 @@ CmdUtils.CreateCommand({
         }
         
         var defaultListName = RTM.lists.get_list_name(RTM.prefs.get(RTM.constants.pref.DEFAULT_LIST, null))||'Inbox';
-
+        
         var taskName = directObject.summary || null;
         var tags = (mods.tags.text) ? mods.tags.text.split() : [];
         var priority = mods.pri.data || null;
@@ -1141,7 +1238,7 @@ CmdUtils.CreateCommand({
 
 		if (RTM.add_task(taskName, listId, url, priority, tags)){
 			displayMessage(RTM.constants.msg.TASK_ADDED);
-			RTM.tasks.async_update();
+			RTM.tasks.async_update_all();
 		} else {
 			displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK);
 		}
@@ -1149,7 +1246,7 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-    name: "rtm-add-note",
+    name: "rtm-note-task",
     author: {
         name: "Gary Hodgson",
         homepage: "http://www.garyhodgson.com/ubiquity",
@@ -1228,7 +1325,7 @@ CmdUtils.log(task);
 
 		if (RTM.add_task_note(taskSeries.task.id, taskSeries.id, taskSeries.list_id, note)){
 			displayMessage(RTM.constants.msg.TASK_NOTE_ADDED);
-			RTM.tasks.async_update();
+			RTM.tasks.async_update_all();
 		} else {
 			displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK_NOTE);
 		}
@@ -1302,10 +1399,7 @@ CmdUtils.CreateCommand({
 		} else {
 			displayMessage(PROBLEM_PRIORITISING_TASK);
 		}
-
-		RTM.tasks.async_update();
-
-
+		RTM.tasks.async_update_all();
     }
 });
 
@@ -1375,25 +1469,18 @@ CmdUtils.CreateCommand({
         	displayMessage('No target task list given.');
             return;
         }
-        var task = RTM.tasks.get_task(directObject.data);
-        if (!task) {
+        var taskSeries = RTM.tasks.get_task(directObject.data);
+        if (!taskSeries) {
             displayMessage('Unable to find that task in your Task Lists.');
             return;
         }
-        
-		var apiParams = {
-            method: "rtm.tasks.moveTo",
-            task_id: task.task.id,
-            taskseries_id: task.id,
-            timeline: RTM.get_timeline(),
-            from_list_id: task.list_id,
-            to_list_id: mods.to.data, 
-        };
-        
-        RTM.rtm_call_json_sync(apiParams, function(r){
-        		displayMessage('Task moved!');
-        		RTM.tasks.async_update();
-    		});
+
+		if (RTM.move_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, mods.to.data)){
+			displayMessage(RTM.constants.msg.TASK_MOVED);
+			RTM.tasks.async_update_all();
+		} else {
+			displayMessage(RTM.constants.msg.PROBLEM_MOVING_TASK);
+		}	
     }
 });
 
@@ -1444,24 +1531,18 @@ CmdUtils.CreateCommand({
             displayMessage('No task given to postpone.');
             return;
         }
-        var task = RTM.tasks.get_task(directObject.data);
-        if (!task) {
+        var taskSeries = RTM.tasks.get_task(directObject.data);
+        if (!taskSeries) {
             displayMessage('Unable to find that task in your Task Lists.');
             return;
         }
-
-        var apiParams = {
-            list_id: task.list_id,
-            method: "rtm.tasks.postpone",
-            task_id: task.task.id,
-            taskseries_id: task.id,
-            timeline: RTM.get_timeline(),
-        };
-        
-        RTM.rtm_call_json_sync(apiParams, function(r){
-        		displayMessage('Task Postponed!'); 
-        		RTM.tasks.async_update();
-    		});
+		
+        if (RTM.postpone_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
+			displayMessage(RTM.constants.msg.TASK_POSTPONED);
+			RTM.tasks.async_update_all();
+		} else {
+			displayMessage(RTM.constants.msg.PROBLEM_POSTPONING_TASK);
+		}
     }
 });
 
@@ -1517,24 +1598,18 @@ CmdUtils.CreateCommand({
             displayMessage('Unable to find any tasks in your Task Lists.');
             return;
         }
-        var task = tasks[directObject.data];
-        if (!task) {
+        var taskSeries = tasks[directObject.data];
+        if (!taskSeries) {
             displayMessage('Unable to find that task in your Task Lists.');
             return;
         }
 
-        var apiParams = {
-            list_id: task.list_id,
-            method: "rtm.tasks.complete",
-            task_id: task.task.id,
-            taskseries_id: task.id,
-            timeline: RTM.get_timeline(),
-        };
-        
-        RTM.rtm_call_json_sync(apiParams, function(r){
-        	displayMessage('Task Completed!'); 
-        	RTM.tasks.async_update();
-    	});
+        if (RTM.complete_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
+			displayMessage(RTM.constants.msg.TASK_COMPLETED);
+			RTM.tasks.async_update_all();
+		} else {
+			displayMessage(RTM.constants.msg.PROBLEM_COMPLETING_TASK);
+		}
     }
 });
 
@@ -1567,7 +1642,7 @@ CmdUtils.CreateCommand({
         if (!RTM.tasks.get_tasks(false)) {
         	displayMessage('Syncing with RTM.');
         	RTM.lists.update();        
-			RTM.tasks.force_update();
+			RTM.tasks.force_update_all();
         	displayMessage('Sync with RTM complete.');
         	return;
         }
