@@ -173,12 +173,16 @@ RTM.template = {
 			+ " <div style=\"padding-top:1px;text-align:right;font-size:0.8em\">"
 			+ "   {if (item.due)}${item.due} - {/if} {if (item.list_name)}${item.list_name}{/if}"
 			+ " </div>"
-			+ "{if (item.notes)}"
-			+ "{for note in item.notes.note}"
-			+ " <div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
-			+ "   <li>${note.$t}"
-			+ " </div>"
-			+ "{/for}"
+			+ "{if (item.notes.note.length)}"
+			+ "	{for note in item.notes.note}"
+			+ " 	<div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
+			+ "			<li>${note.$t}"
+			+ " 	</div>"
+			+ "	{/for}"
+			+ "{elseif (item.notes) }"
+			+ "	<div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
+			+ "		<li>${item.notes.note.$t}"
+			+ "	</div>"
 			+ "{/if}"
 			+ "</div>",
 }
@@ -1185,7 +1189,7 @@ CmdUtils.CreateCommand({
 				due:"",
         	};
     	}
-    
+CmdUtils.log(task);    
         var previewData = {
         	item: task,
         	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
@@ -1196,7 +1200,7 @@ CmdUtils.CreateCommand({
 		var ptemplate = "Add Task Note:";
 		ptemplate += RTM.template.TASK;
 		ptemplate += " <div style=\"padding-left:2px;margin-left:26px;text-align:left;font-size:0.8em\">"
-		ptemplate += "  <li><b>${newNote}</b>"
+		ptemplate += "  {if (newNote)}<li><b>${newNote}</b>{/if}"
 		ptemplate += " </div>"		
 
         previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
