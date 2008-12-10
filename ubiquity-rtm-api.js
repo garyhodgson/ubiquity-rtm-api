@@ -182,12 +182,12 @@ RTM.template = {
 			+ "{if (item.notes && item.notes.note && item.notes.note.length)}"
 			+ "	{for note in item.notes.note}"
 			+ " 	<div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
-			+ "			<li>${note.$t}"
+			+ "			<li>{if (note.title)}<em>${note.title}</em><br/>{/if}${note.$t}"
 			+ " 	</div>"
 			+ "	{/for}"
 			+ "{elseif (item.notes && item.notes.note) }"
 			+ "	<div style=\"margin-left:25px;text-align:left;font-size:0.8em\">"
-			+ "		<li>${item.notes.note.$t}"
+			+ "		<li>{if (item.notes.note.title)}<em>${item.notes.note.title}</em><br/>{/if}${item.notes.note.$t}"
 			+ "	</div>"
 			+ "{/if}"
 			+ "</div>",
@@ -555,7 +555,7 @@ RTM.prioritise_task = function(taskId, seriesId, listId, priority){
 	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});        
 }
 
-RTM.add_task_note = function(taskId, seriesId, listId, noteText){
+RTM.add_task_note = function(taskId, seriesId, listId, noteText, noteTitle){
 	if (!taskId || !seriesId || !listId  || !noteText){
 		return;
 	}			
@@ -567,7 +567,8 @@ RTM.add_task_note = function(taskId, seriesId, listId, noteText){
             timeline: RTM.get_timeline(),
             note_text: noteText
         };
-        
+    if (noteTitle) apiParams.note_title = noteTitle;    
+
 	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});        
 
 }
@@ -1259,6 +1260,7 @@ CmdUtils.CreateCommand({
         note: noun_arb_text
     },
     modifiers: {
+		title: noun_arb_text,
 		to: new RtmNounType("Task", RTM.tasks.get_task_names),
     },
     preview: function(previewBlock, directObject, mods) {
@@ -1270,6 +1272,7 @@ CmdUtils.CreateCommand({
             
         var note = directObject.summary || null;
         var taskName = mods.to.text || null;
+        var title = mods.title.text || null;
         var taskId = mods.to.data || null;
 
         var task = RTM.tasks.get_task(taskId);
@@ -1286,18 +1289,18 @@ CmdUtils.CreateCommand({
 				due:"",
         	};
     	}
-CmdUtils.log(task);    
         var previewData = {
         	item: task,
         	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
         	rootUrl: RTM.constants.url.ROOT_URL,
         	newNote: note,
+        	newNoteTitle: title,
 		}; 
 
 		var ptemplate = "Add Task Note:";
 		ptemplate += RTM.template.TASK;
 		ptemplate += " <div style=\"padding-left:2px;margin-left:26px;text-align:left;font-size:0.8em\">"
-		ptemplate += "  {if (newNote)}<li><b>${newNote}</b>{/if}"
+		ptemplate += "  <li>&nbsp;{if (newNoteTitle)}<em>${newNoteTitle}</em><br/>{/if}{if (newNote)}<b>${newNote}</b>{/if}"
 		ptemplate += " </div>"		
 
         previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
@@ -1317,13 +1320,14 @@ CmdUtils.log(task);
         var note = directObject.text || null;
         var taskId = mods.to.data || null;
 		var taskSeries = RTM.tasks.get_task(taskId);
+        var title = mods.title.text || null;
         
         if (!taskSeries){
         	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
             return;
         }
 
-		if (RTM.add_task_note(taskSeries.task.id, taskSeries.id, taskSeries.list_id, note)){
+		if (RTM.add_task_note(taskSeries.task.id, taskSeries.id, taskSeries.list_id, note, title)){
 			displayMessage(RTM.constants.msg.TASK_NOTE_ADDED);
 			RTM.tasks.async_update_all();
 		} else {
