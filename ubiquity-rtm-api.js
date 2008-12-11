@@ -4,7 +4,7 @@
  * homepage: "http://www.garyhodgson.com/ubiquity/",
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.3.4" 
+ * version: "0.3.5" 
 */
 
 /**
@@ -15,15 +15,21 @@ function RtmNounType(name, expectedWords) {this._init(name, expectedWords);};
 var F = function() {};
 F.prototype = CmdUtils.NounType.prototype;
 RtmNounType.prototype = new F();
+RtmNounType.prototype._init = function(name, expectedWords, defaultWord) {
+	this._name = name;
+	this._wordList = expectedWords;
+	if(typeof defaultWord == "string") {
+		this.default = function() {
+		return CmdUtils.makeSugg(defaultWord);
+	};
+	}
+}
 RtmNounType.prototype.suggest = function(text, html) {
     var suggestions = [];
     if (typeof text != "string") {
         return [];
     }
-	var t = (typeof this._expectedWords == 'function') ?
-						this._expectedWords() 
-						: this._expectedWords;
-
+	var t = (typeof this._wordList == 'function') ? this._wordList() : this._wordList;
     for (var x in t) {
         var word = t[x].toLowerCase();
         if (word.indexOf(text.toLowerCase()) > -1) {
@@ -120,7 +126,7 @@ RTM.constants = {
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.3.4",
+	VERSION: "0.3.5",
 }
 
 
@@ -335,6 +341,12 @@ RTM.rtm_call_json_sync = function(apiParams, successCallback){
 		data: RTM.create_rtm_parameter_object(apiParams, true),
 		dataType: "json",
 	})
+
+	if (r.responseText.indexOf("<title>Remember The Milk - Temporarily Unavailable</title>") != -1){
+		displayMessage('RTM Service is Temporarily Unavailable');
+		return;
+	}
+
 	var j = Utils.decodeJson(r.responseText);
 	if (j.rsp.stat == 'fail') {
 		displayMessage('Error: ' + j.rsp.err.msg);
@@ -568,7 +580,7 @@ RTM.add_task_note = function(taskId, seriesId, listId, noteText, noteTitle){
             note_text: noteText
         };
     if (noteTitle) apiParams.note_title = noteTitle;    
-
+        
 	return RTM.rtm_call_json_sync(apiParams, function(r){return (r.stat == "ok")});        
 
 }
