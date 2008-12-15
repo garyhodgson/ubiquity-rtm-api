@@ -4,7 +4,7 @@
  * homepage: "http://www.garyhodgson.com/ubiquity/",
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.3.5" 
+ * version: "0.3.6" 
 */
 
 /**
@@ -126,7 +126,7 @@ RTM.constants = {
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.3.5",
+	VERSION: "0.3.6",
 }
 
 
@@ -169,10 +169,10 @@ RTM.template = {
 			+ "Command Version: ${v}<br>",
 	TASK: 	"<div style=\"border-top:dashed 1px grey;margin:1px;padding:2px;font-size:1.0em;\">"
 			+ " <div>"
-			+ "   <span style=\"background-color:{if item.task.priority == 1}#ea5200{elseif item.task.priority == 2}#0060bf{elseif item.task.priority == 3}#359aff{else}white{/if};\"> </span>"
+			+ "   <span style=\"background-color:{if item.task.priority == 1}#ea5200{elseif item.task.priority == 2}#0060bf{elseif item.task.priority == 3}#359aff{else}white{/if};\">&nbsp;</span>"
 			+ " <span style=\"color:#359aff;font-size:0.7em\">"
 			+ "     {for tag in item.tags}"
-			+ "     ${tag} "
+			+ "     ${tag}&nbsp;"
 			+ "     {/for}"
 			+ " </span>"
 			+ "   <a style=\"${item.overdue}\" href='${rootUrl}/home/${userId}/${item.list_id}/${item.id}/'>${item.name}</a>"
@@ -238,7 +238,7 @@ RTM.utils = {
 		return ((a.dueTime || new Date("1/1/9999")) - (b.dueTime || new Date("1/1/9999"))) || (a.task.priority > b.task.priority);
 	},
 	escape: function(x){
-		return x.replace(/</g, "<").replace(/>/g, ">");
+		return x.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 	}
 }
 
@@ -1312,7 +1312,7 @@ CmdUtils.CreateCommand({
 		var ptemplate = "Add Task Note:";
 		ptemplate += RTM.template.TASK;
 		ptemplate += " <div style=\"padding-left:2px;margin-left:26px;text-align:left;font-size:0.8em\">"
-		ptemplate += "  <li> {if (newNoteTitle)}<em>${newNoteTitle}</em><br/>{/if}{if (newNote)}<b>${newNote}</b>{/if}"
+		ptemplate += "  <li>&nbsp;{if (newNoteTitle)}<em>${newNoteTitle}</em><br/>{/if}{if (newNote)}<b>${newNote}</b>{/if}"
 		ptemplate += " </div>"		
 
         previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
