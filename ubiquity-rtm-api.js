@@ -96,8 +96,8 @@ RTM.constants = {
 		DATE_FORMAT: "Rtm.Ubiquity.DATE_FORMAT",
 	},
 	url:{
-		API_URL: "http://www.rememberthemilk.com/services/rest/",
-		AUTH_URL: "http://www.rememberthemilk.com/services/auth/",
+		API_URL: "http://api.rememberthemilk.com/services/rest/",
+		AUTH_URL: "http://api.rememberthemilk.com/services/auth/",
 		ROOT_URL: "http://www.rememberthemilk.com/",
 	},
 	msg: {
@@ -169,10 +169,10 @@ RTM.template = {
 			+ "Command Version: ${v}<br>",
 	TASK: 	"<div style=\"border-top:dashed 1px grey;margin:1px;padding:2px;font-size:1.0em;\">"
 			+ " <div>"
-			+ "   <span style=\"background-color:{if item.task.priority == 1}#ea5200{elseif item.task.priority == 2}#0060bf{elseif item.task.priority == 3}#359aff{else}white{/if};\">&nbsp;</span>"
+			+ "   <span style=\"background-color:{if item.task.priority == 1}#ea5200{elseif item.task.priority == 2}#0060bf{elseif item.task.priority == 3}#359aff{else}white{/if};\"> </span>"
 			+ " <span style=\"color:#359aff;font-size:0.7em\">"
 			+ "     {for tag in item.tags}"
-			+ "     ${tag}&nbsp;"
+			+ "     ${tag} "
 			+ "     {/for}"
 			+ " </span>"
 			+ "   <a style=\"${item.overdue}\" href='${rootUrl}/home/${userId}/${item.list_id}/${item.id}/'>${item.name}</a>"
@@ -238,7 +238,7 @@ RTM.utils = {
 		return ((a.dueTime || new Date("1/1/9999")) - (b.dueTime || new Date("1/1/9999"))) || (a.task.priority > b.task.priority);
 	},
 	escape: function(x){
-		return x.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+		return x.replace(/</g, "<").replace(/>/g, ">");
 	}
 }
 
@@ -1312,7 +1312,7 @@ CmdUtils.CreateCommand({
 		var ptemplate = "Add Task Note:";
 		ptemplate += RTM.template.TASK;
 		ptemplate += " <div style=\"padding-left:2px;margin-left:26px;text-align:left;font-size:0.8em\">"
-		ptemplate += "  <li>&nbsp;{if (newNoteTitle)}<em>${newNoteTitle}</em><br/>{/if}{if (newNote)}<b>${newNote}</b>{/if}"
+		ptemplate += "  <li> {if (newNoteTitle)}<em>${newNoteTitle}</em><br/>{/if}{if (newNote)}<b>${newNote}</b>{/if}"
 		ptemplate += " </div>"		
 
         previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
