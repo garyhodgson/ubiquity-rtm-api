@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>RTM Ubiquity ... Work in Progress</title>
+	<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+	<link rel="stylesheet" href="css/ubiquity.css" type="text/css" media="screen"  charset="utf-8">
+	<script src="js-util/ubiquityUtils.js"></script>
+	<script src="js-util/twitter.js"></script>
+	<script src="js-util/trimpath-template.js"></script>
+	<script>
+    function load() {
+	        var table = document.getElementById("cmdList");
+			var releaseinfo = document.getElementById("releaseinfo");
+			
+			if (typeof(RELEASE_INFO) != "undefined"){
+				for (var i in RELEASE_INFO){
+				releaseinfo.innerHTML += TrimPath.processDOMTemplate(
+		          						"release_jst", 
+		          						{ 	number: RELEASE_INFO[i].number || "",
+		          							date: RELEASE_INFO[i].date || "",
+		          							features: RELEASE_INFO[i].features || "",
+		          							description: RELEASE_INFO[i].description || "",
+		          							knownissues: RELEASE_INFO[i].knownissues || "",
+		          						}
+		      						);
+				}
+	        }
+			
+			CmdUtils.commands.forEach(function(aCommand) {
+	          table.innerHTML += TrimPath.processDOMTemplate(
+	          						"command_jst", 
+	          						{ 	img: (aCommand.icon || ""),
+	            						name: (aCommand.name || ""),
+	            						desc: (aCommand.description || ""),
+	            						help: (aCommand.help || "")
+	        						});
+	        });
+	        
+	        
+			 var messages = document.getElementById("messages");
+	         messages.innerHTML += "<p>Here is a list of the tests I am aiming to complete before releasing each milestone version of my new RTM command, in case anyone is interested in the progress being made.<br><br>Things will magically appear and disappear as I muddle through the code and as new ideas crop up, so what is shown below is not set in stone, however I am aiming to release as soon as possible.</p>";
+	         // Uncomment this for messages: 
+	         messages.style.display = '';
+	      };
+    </script>
+</head>
+<body onload="load();">
+	
+	<div id="container">
+		<a href="/ubiquity"><img src="images/ubiquity_side.png"/></a>
+		<div id="title">
+			A place to collect my various <a href="http://labs.mozilla.com/2008/08/introducing-ubiquity/">ubiquity</a> commands.<br><br>
+			
+			<span id="back"><a href="http://garyhodgson.com">Home</a></span>
+			<span id="home"><a href="/ubiquity">Back</a></span>
+			<span id="feedback"><a href="mailto:contact@garyhodgson.com">Feedback</a></span>
+			<div style="display:none;" id="messages" class="info"></div>
+		</div>
+		<table id="cmdList"/>			
+		<table id="releaseinfo"/>
+	</div>
+
+	<div id="twitter_div" class="info">
+		<h2 id="updates-title" class="info-title twitter-title"><a href="http://twitter.com/garyhodgson">Latest Updates</a></h2>
+		<ul id="twitter_update_list"><img src="ajax-loader.gif"></ul>
+	</div>
+
+	<div id="bugs" class="info">
+		<h2 id="updates-title" class="info-title twitter-title">Known Active Bugs</h2>
+		<ul>
+			<li>(0.3) Having some text selected in the page is used as an url, whether you have used the url modifier or not.</li>
+			<li class="x">(0.2) There is no order to the tasks in v0.2 ... that has to wait until v0.2.1 or v0.3, and only the top 20 tasks are shown for a given search criteria. Future editions should allow this to be configured.</li>
+			<li class="x">(0.2) For some reason the list of tasks that are shown when using the rtm-complete-task command, are not shown immediately after logging in. On the next start of Firefox, everything works as advertised.</li>
+			<li class="x">(0.2) If a task or task list is modified externally from the ubiquity command, whilst it is running, the changes are not immediately visible in ubiquity. I think this is something to do with the time values sent when syncing with RTM and the timezone settings. I'm looking at this for 0.2.1 or 0.3.</li>
+		</ul>				
+	</div>		
+	
+	<div id="tests" class="info">
+	
+		<h2 id="tests-title" class="info-title">Current Tasks</h2>
+	
+		<h2 id="milestone">0.4</h2>
+		<ul>
+			<li>TBD</li>		
+		</ul>
+		<h2 id="milestone">Future</h2>
+		<ul>
+			<h3>Useful</h3>				
+				<li>Locations</li>
+				<li>Contacts</li>
+				<li>Undo last action</li>
+				<li>View Tasks</li>
+					<ul>
+						<li>For Date</li>
+					</ul>
+			<h3>Efficient</h3>		
+				<li>Improve Javascript ... create task objects etc.</li>
+		</ul>
+		<hl>
+		
+		<h2 id="tests-title" class="info-title">Previous Milestones</h2>
+		
+		<h2 id="milestone"><a href="rtm.html">0.1</a></h2>
+	
+		<ul>
+			<li class="x"><a href="rtm.html">RTM bookmarklet solution</a></li>
+		</ul>
+		<h2 id="milestone"><a href="rtm-v2.html">0.2</a></h2>
+		<ul>
+			<h3>Secure</h3>
+				<li class="x">User receives a valid Authorisation Token from RTM</li>
+				<ul>
+					<li class="indent2 x">User is directed to RTM to authorise ubiquity to use RTM account</li>
+					<li class="indent2 x">User logs in at next attempt.</li>
+					<li class="indent2 x">Auth. Token is valid</li>
+				</ul>
+				<li class="x">Auth. Token stored in Browser (using Mozilla FUEL <a href="http://developer.mozilla.org/en/FUEL/SessionStorage">SessionStorage</a>)</li>
+				<li class="x">Auth. Token successfully deleted on User request.</li>
+				<li class="x">API Keys solution decision made</li>
+				<li class="x">Security testing</li>		
+			<h3>Useful</h3>
+				<li class="x">Add Task</li>
+				<ul>
+					<li class="x">For Date</li>
+					<li class="x">To List</li>
+				</ul>
+				<li class="x">View Tasks</li>
+				<ul>
+					<li class="x">By List</li>
+					<li class="x">Task name links to task in RTM</li>
+					<li class="x">Search for task by name</li>
+					<li class="x">Show due date for task</li>
+					<li class="x">Give link to URL related to task</li>
+					<li class="x">Format tasks nicely in preview</li>
+					<li class="x">Show priority and due status in preview</li>					
+				</ul>
+				<li class="x">Set Task to completed</li>
+			<h3>Efficient</h3>		
+				<li class="x">Only retrieve tasks that have changed since last action.</li>
+				<li class="x">Only show top 20 matches when viewing tasks.</li>
+				<li class="x">Only check token is valid every 10 minutes.</li>
+		</ul>
+				<h2 id="milestone">0.3</h2>
+		<ul>
+			<h3>Useful</h3>
+				<li class="x">Postpone Task</li>
+				<li class="x">Prioritise Task</li>
+				<li class="x">Move Task</li>
+				<li class="x">Force Task Refresh</li>
+				<li>Add Task</li>
+				<ul>
+					<li class="x">With Priority</li>
+					<li class="x">With Tags</li>
+					<li class="x">With URL</li>
+				</ul>			
+				<li>View Tasks</li>
+				<ul>
+					<li class="x">From Smart-List</li>
+					
+					<li class="x">With Priority</li>
+					<li class="x">Ordered</li>
+					<li class="x">Initially shows tasks from users default list</li>
+					<li class="x">Case insensitive search</li>
+					<li class="x">View all tasks with a scrollbar</li>
+				</ul>
+				<h3>Efficient</h3>
+					<li class="x">Reflect changes to RTM tasks that happen outside ubiquity : via a refresh command</li>
+					<li class="x">Uses JSON</li>
+		</ul>
+		</div>
+	</div>
+
+	<script type="text/javascript" src="twitter.js"></script>
+<script type="text/javascript" src="http://twitter.com/statuses/user_timeline/garyhodgson.json?callback=twitterCallback2&amp;count=5"></script>
+
+	<script src="js-util/google-analytics.js"></script>
+</body>
+</html>
