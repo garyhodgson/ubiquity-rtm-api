@@ -1,0 +1,311 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<title>garyhodgson.com/ubiquity/rtm</title>
+	<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link rel="stylesheet" href="css/rtm.css" type="text/css" media="screen"  charset="utf-8">
+	<link rel="commands" href="js-command/ubiquity-rtm-api.js" name="Ubiquity RTM command" />
+</head>
+<body>
+<div id="container">
+
+	<div id="title">
+		<table border="0" cellpadding="3" cellspacing="0" class="zeroBorder" width="700">
+			<tbody>
+				<tr>
+					<td style="TEXT-ALIGN:center">
+						<img src="images/rtm/RTM_UBIQUITY_LOGO_1.png" width="160" height="213" alt="Remember The Milk Ubiquity">
+					</td>
+					<td>
+						<span style="FONT-WEIGHT:normal"><b><font size="6">Remember The Milk Ubiquity</font></b></span>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	
+	<p>&nbsp;</p>
+	
+	<div class="toc">
+		<ol class="toc-none">
+			<li><a href="#About" target="_self">About</a></li>
+			<li><a href="#Command_Summary" target="_self">Command Summary</a></li>
+			<li><a href="#Features_in_Detail" target="_self">Features</a></li>
+			<li><a href="#Releases" target="_self">Releases</a></li>
+			<li><a href="#Known_Issues" target="_self">Known Issues</a></li>
+			<li><a href="#Caveats_and_Notes" target="_self">Caveats and Notes</a></li>
+			<li><a href="#Thanks" target="_self">Thanks</a></li>
+		</ol>
+	</div>
+
+	<p>&nbsp;</p>
+
+	<div class="toc" id="messages"><h4>Latest News</h4>
+		Version 0.3.6 now available, which fixes a couple of minor bugs.  (15th December 2008)
+	</div>
+		
+	<h1><a id="About" name="About">About</a></h1>
+	<p>
+		A <a href="http://labs.mozilla.com/2008/08/introducing-ubiquity/" target="_blank" title="Ubiquity" >Ubiquity</a> command that interacts with <a href="http://www.rememberthemilk.com" target="_blank" title="Remember The Milk" >Remember The Milk</a> to manage your tasks.  See the <a href="#Releases" target="_self">releases</a> section for details of the latest version available.
+		<br>
+		<br>
+		This product uses the Remember The Milk API but is not endorsed or certified by Remember The Milk.
+		<br>
+		<br>	
+		Feedback, comments and suggestions are welcome: <a href="mailto:contact@garyhodgson.com">contact@garyhodgson.com</a>
+	</p>
+
+	<h1><a id="Command_Summary" name="Command_Summary">Command Summary</a></h1>
+	<ul id="command_summary">
+		<li><a href="#rtm_login" target="_self">rtm-login</a></li>
+		<li><a href="#rtm_refresh" target="_self">rtm-refresh</a></li>
+		<li><a href="#rtm_logout" target="_self">rtm-logout</a></li>
+		<li><a href="#rtm_add_task" target="_self">rtm-add-task <span class="parameter">taskname</span>
+				<ul>
+					<li>to <span class="parameter">tasklist</span></li>
+				</ul>
+			</a>
+		</li>
+		<li><a href="#rtm_add_task_due" target="_self">rtm-add-task <span class="parameter">taskname</span> 
+				<ul>
+					<li>to <span class="parameter">tasklist</span></li> 
+					<li>on <span class="parameter">due date</span></li> 
+				</ul>
+			</a>
+		</li>
+		<li><a href="#rtm_add_task_all" target="_self">rtm-add-task <span class="parameter">taskname</span> 
+				<ul>
+					<li>to <span class="parameter">tasklist</span></li> 
+					<li>on <span class="parameter">due date</span></li> 
+					<li>pri <span class="parameter">[1|2|3|none]</span></li> 
+					<li>url <span class="parameter">[this|url]</span></li> 
+					<li>tags <span class="parameter">comma,separated,tags</span></li>
+				</ul>
+			</a>
+		</li>
+		<li><a href="#rtm_complete_task" target="_self">rtm-complete-task <span class="parameter">taskname</span></a></li>
+		<li><a href="#rtm_postpone_task" target="_self">rtm-postpone-task <span class="parameter">taskname</span></a></li>
+		<li><a href="#rtm_prioritise_task" target="_self">rtm-prioritise-task <span class="parameter">taskname</span>
+				<ul>
+					<li>to <span class="parameter">[1,2,3,none]</span></li>						
+				</ul>
+			</a>
+		</li>
+		<li><a href="#rtm_move_task" target="_self">rtm-move-task <span class="parameter">taskname</span> 
+				<ul>
+					<li>to <span class="parameter">tasklist</span></li>
+				</ul>
+			</a>
+		</li>
+		<li><a href="#rtm_note_task" target="_self">rtm-note-task <span class="parameter">note</span> 
+				<ul>
+					<li>to <span class="parameter">task</span></li>
+				</ul>
+			</a>
+		</li>
+		<li><a href="#rtm_view_tasks" target="_self">rtm-view-task <span class="parameter">taskname</span>
+				<ul>
+				<li>in <span class="parameter">tasklist</span></li> 
+				<li>pri <span class="parameter">[1|2|3|none]</span></li> 
+				<li>tag <span class="parameter">tagname</span></li>
+				</ul>
+			</a>
+		</li>
+	</ul>
+
+	<p>&nbsp;</p>
+
+	<h1><a id="Features_in_Detail" name="Features_in_Detail"></a>Features</h1>
+
+	<h3><a id="rtm_login" name="rtm_login">rtm-login</a></h3>	
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/login_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/login_2.gif"><br>
+		<img class="rtm_img" src="images/rtm/login_3.gif"><br>
+		<img class="rtm_img" src="images/rtm/login_4.gif"><br>
+		<img class="rtm_img" src="images/rtm/login_5.gif"><br>
+		<img class="rtm_img" src="images/rtm/login_6.gif"><br>
+		<img class="rtm_img" src="images/rtm/login_7.gif"><br>
+	</blockquote>
+
+	<h3><a id="rtm_refresh" name="rtm_login">rtm-refresh</a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/refresh_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/refresh_2.gif"><br>
+	</blockquote>
+	
+	<h3><a id="rtm_logout" name="rtm_login">rtm-logout</a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/logout_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/logout_2.gif"><br>
+	</blockquote>
+	
+	<h3><a id="rtm_add_task" name="rtm_add_task">rtm-add-task <span class="parameter">taskname</span> to <span class="parameter">tasklist</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/add_task_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/add_task_2.gif"><br>
+	</blockquote>
+
+	<h3><a id="rtm_add_task_due" name="rtm_add_task_due">rtm-add-task <span class="parameter">taskname</span> on <span class="parameter">due date</span> to <span class="parameter">tasklist</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/add_task_due_1.gif"><br>
+	</blockquote>
+	
+	<h3><a id="rtm_add_task_all">rtm-add-task <span class="parameter">taskname</span> 
+			to <span class="parameter">tasklist</span>
+			on <span class="parameter">due date</span> 
+			pri <span class="parameter">[1|2|3|none]</span>
+			url <span class="parameter">[this|url]</span>
+			tags <span class="parameter">comma,separated,tags</span>
+	</a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/add_task_all_1.gif"><br>
+	</blockquote>
+	
+	<h3><a id="rtm_complete_task" name="rtm_complete_task">rtm-complete-task <span class="parameter">task name</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/complete_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/complete_2.gif" ><br>
+	</blockquote>
+
+	<h3><a id="rtm_postpone_task" name="rtm_postpone_task">rtm_postpone_task <span class="parameter">task name</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/postpone_task_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/postpone_task_2.gif"><br>
+	</blockquote>	
+	
+	<h3><a id="rtm_prioritise_task" name="rtm_prioritise_task">rtm_prioritise_task <span class="parameter">taskname</span> to <span class="parameter">[1,2,3,none]</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/prioritise_task_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/prioritise_task_2.gif"><br>
+		<img class="rtm_img" src="images/rtm/prioritise_task_3.gif"><br>
+	</blockquote>
+
+	<h3><a id="rtm_note_task" name="rtm_note_task">rtm_note_task <span class="parameter">note</span> to <span class="parameter">task</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/note_task_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/note_task_2.gif"><br>
+		<img class="rtm_img" src="images/rtm/note_task_3.gif"><br>
+	</blockquote>	
+	
+	<h3><a id="rtm_move_task" name="rtm_move_task">rtm_move_task <span class="parameter">task name</span> to <span class="parameter">tasklist</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/move_task_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/move_task_2.gif"><br>
+	</blockquote>		
+		
+	<h3><a id="rtm_view_tasks" name="rtm_view_tasks">rtm-view-tasks <span class="parameter">taskname</span> in <span class="parameter">tasklist</span> pri <span class="parameter">[1|2|3|none]</span> tag <span class="parameter">tagname</span></a></h3>
+	<blockquote>
+		<img class="rtm_img" src="images/rtm/view_tasks_1.gif"><br>
+		<img class="rtm_img" src="images/rtm/view_tasks_2.gif"><br>
+		<img class="rtm_img" src="images/rtm/view_tasks_3.gif"><br>
+		<img class="rtm_img" src="images/rtm/view_tasks_4.gif"><br>
+		<img class="rtm_img" src="images/rtm/view_tasks_5.gif"><br>		
+		<img class="rtm_img" src="images/rtm/view_tasks_6.gif"><br>		
+	</blockquote>
+
+
+	<h1><a id="Releases" name="Releases">Releases</a></h1>
+	<blockquote>
+		<div class="release_notes">
+			<ul>
+				<li>0.3.6 - 15th December 2008 - Updated the RTM api URLs.</li>
+				<li>0.3.5 - 11th December 2008 - Quick fix to handle the RTM service being down in a more elegant way.</li>
+				<li>0.3.4 - 9th December 2008</li>
+					<ul>
+						<li>Added notes belonging to a task to the 'rtm-view-task' command</li>
+						<li>Added 'rtm-note-task' command</li>
+					</ul>	
+				<li>0.3.3 - 12th November 2008 - Quick fix to add tag suggestions to 'rtm-add-task'</li>
+				<li>0.3.2 - 24th October 2008 - Fixes the following bugs, introduced by release 0.1.2 of Ubiquity:</li>
+					<ul>
+						<li>Tasks not available after logging in.</li>
+						<li>Regular task lists missing on the add-task command</li>
+						<li>Task lists for complete-task, move-task, etc not updating immediately after adding a task</li>
+					</ul>
+				<li>0.3.1 - 10th October 2008 - Small Bug Fixes:</li>
+					<ul>
+						<li>Task names containing angled brackets were not displaying correctly.</li>
+						<li>Instances where task does not contain sub-objects causes tasks not to load.</li>
+					</ul>	
+				<li>0.3 - 6th October 2008 - Additional Functionality and code rewrite.
+					<ul>
+						<li>Add task with priority, url and tags.</li>
+						<li>Task order is sorted (ala RTM) when viewing tasks.</li>
+						<li>New command to move tasks between task lists.</li>
+						<li>New command to postpone a task.</li>
+						<li>New command to prioritise a task.</li>
+						<li>New command to force a refresh with the RTM server.</li>
+						<li>Improved preview when adding a task.</li>
+						<li>Improved preview when viewing tasks.</li>
+						<li>View tasks by priority.</li>
+						<li>View tasks by tag.</li>
+						<li>View tasks by Smart List.</li>
+						<li>View task task name search now case-insensitive.</li>		
+					</ul>
+				</li>
+				<li>0.2.3 - 2nd October 2008 - Tasks are immediately updated after adding or completing.</li>
+				<li>0.2.2 - 23rd September 2008 - Version 0.2 does not show tasks in Smart Lists, and to make matters worse, tasks can be added to these lists, even though they are dynamically generated.  Therefore I have temporarily removed Smart Lists from v0.2 until a better fix is available (hopefully asap)</li>
+				<li>0.2.1 - 22nd September 2008 - Small bug fix to stop rtm-logout complaining if it cannot find a valid ISO date.</li>
+				<li>0.2 - 20th September 2008- Initial release of API version
+					<ul>
+						<li>New command to add a task to a task list, for a given date/time.</li>
+						<li>New command to view tasks by task list.</li>
+						<li>New command to set a task to completed.</li>
+						<li>View task details: name, due date, priority, due status, url.</li>						
+					</ul>					
+				</li>
+				<li>0.1 - 28 August 2008 - Bookmarklet version created based on an original command by <a href='http://kubasik.net/blog/2008/08/27/remember-the-milk-plugin-for-mozilla-ubiquity/'>Kevin Kubasik</a></li>
+			</ul>
+		</div>
+	</blockquote>
+
+	<div id="known_issues">
+		<h1><img src="images/rtm/warning.png" style="WIDTH:32px; HEIGHT:32px">&nbsp;&nbsp;<a id="Known_Issues" name="Known_Issues">Known Issues</a></h1>
+	
+		<blockquote>
+			<ul class="known_issues">
+				
+				<h5>Version 0.3</h5>
+				<li>Suggestions are not displayed until a character in the suggestion is actually typed. See <a href="http://labs.toolness.com/trac/ticket/359">Ubiquity bug 359</a>for details.<br>Sadly it seems that this will not be addressed until Ubiquity version 0.1.4 at the earliest.</li>
+				<li>Using a modifier as a legitimate part of a variable (e.g. 'rtm-add-task go to the opera to inbox') would cause the Ubiquity command to fail.  See <a href="http://labs.toolness.com/trac/ticket/358">Ubiquity bug 358</a> for details.<br>Sadly it seems that this will not be addressed until Ubiquity version 0.1.4 at the earliest.</li>
+				<li>Having some text selected in the page is used as an url, whether you have used the url modifier or not.</li>
+				<h5>Version 0.2</h5>
+				<li class="completed">There is no order to the tasks in v0.2 ... that has to wait until v0.2.1 or v0.3, and only the top 20 tasks are shown for a given search criteria. Future editions should allow this to be configured.
+				</li>
+				<li class="completed">For some reason the list of tasks that are shown when using the rtm-complete-task command, are not shown immediately after logging in. On the next start of Firefox, everything works as advertised. Update: This is slightly more annoying than I first realised, the list of tasks shown when trying to complete a task is not updated after adding a task, therefore you cannot complete a task straight-away.  It's fixed in the next version already, and I will see about a quick fix for 0.2 now. (Fixed - 2nd October 2008 20:00 CET)
+				</li>
+				<li class="completed">If a task or task list is modified externally from the ubiquity command, whilst it is running, the changes are not immediately visible in ubiquity.  I think this is something to do with the time values sent when syncing with RTM and the timezone settings.  I'm looking at this for 0.2.1 or 0.3.
+				</li>
+			</ul>
+		</blockquote>
+	</div>
+
+	<h1><a id="Caveats_and_Notes" name="Caveats_and_Notes">Caveats and Notes</a></h1>
+
+	<blockquote>
+		<ul>
+			<li><span class="highlight">The authorisation token is stored locally in your browser, and will remain there until you manually call the 'rtm-logout' function. This means that anyone with access to your PC whilst the RTM Ubiquity command is active can act on your Task Lists!</span> Hopefully they will actually perform the tasks too, but if you work on a shared PC then please bear this in mind.</li>
+			<li>I have only tested this with a small set of task lists and tasks.  If you have millions of tasks (hard luck!) then the command may be slow for you.  I would be interested to know how it holds up in either case, so feel free to <a href="mailto:contact@garyhodgson.com" title="drop me a line">drop me a line</a>!</li>
+			<li>One of the beauties of ubiquity is that it is really easy to take a command you like, and tweak your own copy to meet your own needs. Please feel free to do so with this command, but if you make modifications please use your own <a href="http://www.rememberthemilk.com/services/api/keys.rtm" target="_blank" title="RTM API Key">RTM API Key</a>.  Feel free to <a href="mailto:contact@garyhodgson.com"  target="_blank" title="contact me" >contact me</a> if you have any questions, and I will see what I can do, and the <a href="http://groups.google.com/group/rememberthemilk-api/" target="_blank" title="RTM Google Group">RTM</a> and <a href="http://groups.google.com/group/ubiquity-firefox"  target="_blank" title="Ubiquity Google Group" >Ubiquity</a> forums are pretty handy too.</li>
+		</ul>
+	</blockquote>
+	
+	<h1><a id="Thanks" name="Thanks">Thanks</a>	</h1>
+	<blockquote>
+		<ul>
+			<li><a href="http://delete.me.uk/2005/03/iso8601.html" target="_blank" title="ISO8601 Date function from Paul Sowden" >ISO8601 Date function from Paul Sowden</a></li>
+			<li><a href="http://pajhome.org.uk/crypt/md5" target="_blank" title="Javascript MD5 implementation from&nbsp;Paul Johnston" >Javascript MD5 implementation from&nbsp;Paul Johnston</a></li>
+			<li><a href="http://dean.edwards.name/packer/" target="_blank" title="Javascript packer from&nbsp;Dean Edwards">Javascript packer from&nbsp;Dean Edwards</a></li>
+			<li><a href="http://www.sxc.hu/photo/189279">Image of milk carton</a> by <a href="http://www.broken-arts.com/" target="_blank">brokenarts</a> (<a href="http://www.sxc.hu/profile/brokenarts">via sxc.hu</a>)</li>
+		</ul>
+	</blockquote>
+
+	<br><br>
+</div>
+
+<script src="js-util/google-analytics.js"></script>
+
+</body>
+</html>    
