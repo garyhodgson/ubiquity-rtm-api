@@ -4,7 +4,7 @@
  * homepage: "http://www.garyhodgson.com/ubiquity/",
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.3.6" 
+ * version: "0.3.7" 
 */
 
 /**
@@ -29,6 +29,7 @@ RtmNounType.prototype.suggest = function(text, html) {
     if (typeof text != "string") {
         return [];
     }
+
 	var t = (typeof this._wordList == 'function') ? this._wordList() : this._wordList;
     for (var x in t) {
         var word = t[x].toLowerCase();
@@ -126,7 +127,7 @@ RTM.constants = {
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.3.6",
+	VERSION: "0.3.7",
 }
 
 
@@ -346,7 +347,6 @@ RTM.rtm_call_json_sync = function(apiParams, successCallback){
 		displayMessage('RTM Service is Temporarily Unavailable');
 		return;
 	}
-
 	var j = Utils.decodeJson(r.responseText);
 	if (j.rsp.stat == 'fail') {
 		displayMessage('Error: ' + j.rsp.err.msg);
@@ -519,22 +519,22 @@ RTM.add_task = function(taskName, listId, url, priority, tags){
     }
 
 	return RTM.rtm_call_json_sync(apiParams, function(r){
-			if (r.stat == "ok" && r.list){
-				var taskId = r.list.taskseries.task.id;
-				var taskSeriesId = r.list.taskseries.id;
-				var listId = r.list.id;
+		if (r.stat == "ok" && r.list){
+			var taskId = r.list.taskseries.task.id;
+			var taskSeriesId = r.list.taskseries.id;
+			var listId = r.list.id;
+			
+			if (url) RTM.set_task_url(taskId, taskSeriesId, listId, url);
 				
-				if (url) RTM.set_task_url(taskId, taskSeriesId, listId, url);
-					
-				if (tags) RTM.tag_task(taskId, taskSeriesId, listId, tags);
-		
-				if (priority) RTM.prioritise_task(taskId, taskSeriesId, listId, priority);
-				
-				return true;
-			} else {
-				return false;
-			}
-		});        	
+			if (tags) RTM.tag_task(taskId, taskSeriesId, listId, tags);
+	
+			if (priority) RTM.prioritise_task(taskId, taskSeriesId, listId, priority);
+			
+			return true;
+		} else {
+			return false;
+		}
+	});        	
 }
 
 RTM.set_task_url = function(taskId, seriesId, listId, url){
@@ -1182,7 +1182,7 @@ CmdUtils.CreateCommand({
         to: new RtmNounType("Task List", RTM.lists.get_regular_list_names),
         pri: new RtmNounType( "Priority", {"1":"1","2":"2","3":"3","N":"None"} ),
         url: noun_arb_text,
-        tags: new RtmNounType( "Tag", RTM.tasks.get_tag_array ),
+        tags: noun_arb_text,
     },
     preview: function(previewBlock, directObject, mods) {
 		previewBlock.innerHTML = this.description;
@@ -1248,7 +1248,6 @@ CmdUtils.CreateCommand({
     	    url = (Utils.trim(url) == "this") ? (CmdUtils.getWindowInsecure().location.href || "") : Utils.trim(url);
 			url = RTM.utils.format_url(url);
 		}
-
 		if (RTM.add_task(taskName, listId, url, priority, tags)){
 			displayMessage(RTM.constants.msg.TASK_ADDED);
 			RTM.tasks.async_update_all();
