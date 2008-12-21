@@ -6,38 +6,6 @@
 	<link rel="shortcut icon" href="http://garyhodgson.com/ubiquity/images/favicon.ico" type="image/x-icon" />
 	<link rel="stylesheet" href="http://garyhodgson.com/ubiquity/css/ubiquity.css" type="text/css" media="screen"  charset="utf-8">
 	<script src="http://garyhodgson.com/ubiquity/js-util/twitter.js"></script>
-	<script type="text/javascript" src="js/jquery.js"></script>
-	<script type="text/javascript" src="js/jquery.jfeed.pack.js"></script>	
-
-
-	<script type="text/javascript">
-		
-		jQuery(function() {		
-		    jQuery.getFeed({
-		        url: 'proxy2.php',
-		        success: function(feed) {
-		            var html = '<ul>';
-		            
-		            for(var i = 0; i < feed.items.length; i++) {
-		            
-		                var item = feed.items[i];
-		                
-		                html += '<li>'
-		                + '<a href="'
-		                + item.link
-		                + '">'
-		                + item.title
-		                + '</a>'
-		                + '</li>';		            
-		            }
-		            html += '</ul>';
-		            
-		            jQuery('#rtm_tasks_div').append(html);
-		        }    
-		    });
-		});
-	</script>
-
 </head>
 <body>
 	
@@ -51,12 +19,15 @@
 
 	<div id="twitter_div" class="info">
 		<h2 id="updates-title" class="info-title twitter-title"><a href="http://twitter.com/garyhodgson">Latest Updates via Twitter</a></h2>
-		<ul id="twitter_update_list"><img src="ajax-loader.gif"></ul>
+		<ul id="twitter_update_list"><img src="images/ajax-loader.gif"></ul>
 	</div>
 
 	<div id="rtm_tasks_div" class="info">
 		<h2 id="updates-title" class="info-title rtm-tasks-title"><a href="http://www.rememberthemilk.com/home/gary.hodgson/4830019/">Incomplete Tasks via RTM</a></h2>
+		<iframe src ="http://www.rememberthemilk.com/home/gary.hodgson/4830019/" width="800px" height="800px">
+		</iframe>
 	</div>
+
 		
 	<script type="text/javascript" src="twitter.js"></script>
 <script type="text/javascript" src="http://twitter.com/statuses/user_timeline/garyhodgson.json?callback=twitterCallback2&amp;count=5"></script>
