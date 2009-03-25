@@ -41,9 +41,8 @@
 
 	<p>&nbsp;</p>
 
-<div class="toc" id="messages"><h4>Latest News</h4>
-		<img src="images/rtm/warning.png">
-		WARNING: Version 0.1.7 of the Ubiquity add-on seems to have broken the commands. I am working on a fix. (25th March 2009)
+	<div class="toc" id="messages"><h4>Latest News</h4>
+		Version 0.3.8 fixes a small bug introduced with version 0.1.7 of Ubiquity. (25th March 2009)
 	</div>
 		
 	<h1><a id="About" name="About">About</a></h1>
@@ -211,6 +210,7 @@
 	<blockquote>
 		<div class="release_notes">
 			<ul>
+				<li>0.3.8 - 25th March 2009 - Small bug fix introduced with Ubiquity 0.1.7 which caused the entire script to be rejected and therefore stopped all commands from appearing.</li>
 				<li>0.3.7 - 21st December 2008 - add-task command now allows any abitrary text to be used.  A previous change had accidentally restricted this to list only existing tags.</li>
 				<li>0.3.6 - 15th December 2008 - Updated the RTM api URLs.</li>
 				<li>0.3.5 - 11th December 2008 - Quick fix to handle the RTM service being down in a more elegant way.</li>
@@ -268,10 +268,10 @@
 	
 		<blockquote>
 			<ul class="known_issues">
-				
+
 				<h5>Version 0.3</h5>
-				<li>Suggestions are not displayed until a character in the suggestion is actually typed. See <a href="http://labs.toolness.com/trac/ticket/359">Ubiquity bug 359</a>for details.<br>Sadly it seems that this will not be addressed until Ubiquity version 0.1.4 at the earliest.</li>
-				<li>Using a modifier as a legitimate part of a variable (e.g. 'rtm-add-task go to the opera to inbox') would cause the Ubiquity command to fail.  See <a href="http://labs.toolness.com/trac/ticket/358">Ubiquity bug 358</a> for details.<br>Sadly it seems that this will not be addressed until Ubiquity version 0.1.4 at the earliest.</li>
+				<li>Suggestions are not displayed until a character in the suggestion is actually typed. See <a href="http://labs.toolness.com/trac/ticket/359">Ubiquity bug 359</a>for details.</li>
+				<li>Using a modifier as a legitimate part of a variable (e.g. 'rtm-add-task go to the opera to inbox') would cause the Ubiquity command to fail.  See <a href="http://labs.toolness.com/trac/ticket/358">Ubiquity bug 358</a> for details.</li>
 				<li>Having some text selected in the page is used as an url, whether you have used the url modifier or not.</li>
 				<h5>Version 0.2</h5>
 				<li class="completed">There is no order to the tasks in v0.2 ... that has to wait until v0.2.1 or v0.3, and only the top 20 tasks are shown for a given search criteria. Future editions should allow this to be configured.
