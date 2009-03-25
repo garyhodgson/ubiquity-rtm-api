@@ -1,10 +1,11 @@
 /**
- * description: "A collections of commands that interact with <a href=\"http://rememberthemilk.com\">Remember the Milk<a>"
+ * description: "A collection of commands that interact with <a href=\"http://rememberthemilk.com\">Remember the Milk<a>"
  * name: "Gary Hodgson",
  * homepage: "http://www.garyhodgson.com/ubiquity/",
+ * source: "http://github.com/garyhodgson/ubiquity-rtm-api", 
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.3.7" 
+ * version: "0.3.8" 
 */
 
 /**
@@ -127,7 +128,7 @@ RTM.constants = {
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.3.7",
+	VERSION: "0.3.8",
 }
 
 
@@ -1071,16 +1072,14 @@ RTM.tasks = function(){
  */
 CmdUtils.CreateCommand({
     name: "rtm-refresh",  
+    homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
         email: "contact@garyhodgson.com"
     },
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "Force a refresh of all tasks and tasklists from RTM.",
-    takes: {
-    },
     execute: function(directObject, mods) {
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
@@ -1110,9 +1109,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
     name: "rtm-logout",
+	homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
         email: "contact@garyhodgson.com",
     },
     license: "MPL",
@@ -1140,9 +1139,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
     name: "rtm-login",
+    homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
         email: "contact@garyhodgson.com"
     },
     license: "MPL",
@@ -1167,9 +1166,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
     name: "rtm-add-task",
+    homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
         email: "contact@garyhodgson.com"
     },
     license: "MPL",
@@ -1259,9 +1258,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
     name: "rtm-note-task",
+    homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
         email: "contact@garyhodgson.com"
     },
     license: "MPL",
@@ -1349,9 +1348,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
 	name: "rtm-prioritise-task",
-		author: {
+    homepage: "http://www.garyhodgson.com/ubiquity",
+    author: {
 		name: "Gary Hodgson",
-		homepage: "http://www.garyhodgson.com/ubiquity",
 		email: "contact@garyhodgson.com"    
 	},
 	license: "MPL",
@@ -1420,9 +1419,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
 	name: "rtm-move-task",
-		author: {
+    homepage: "http://www.garyhodgson.com/ubiquity",
+	author: {
 		name: "Gary Hodgson",
-		homepage: "http://www.garyhodgson.com/ubiquity",
 		email: "contact@garyhodgson.com"    
 	},
 	license: "MPL",
@@ -1502,9 +1501,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
 	name: "rtm-postpone-task",
-		author: {
+    homepage: "http://www.garyhodgson.com/ubiquity",
+	author: {
 		name: "Gary Hodgson",
-		homepage: "http://www.garyhodgson.com/ubiquity",
 		email: "contact@garyhodgson.com"    
 	},
 	license: "MPL",
@@ -1564,9 +1563,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
     name: "rtm-complete-task",
+    homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
         email: "contact@garyhodgson.com"    },
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
@@ -1631,9 +1630,9 @@ CmdUtils.CreateCommand({
 
 CmdUtils.CreateCommand({
     name: "rtm-view-tasks",
+    homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
-        homepage: "http://www.garyhodgson.com/ubiquity",
         email: "contact@garyhodgson.com"
     },
     license: "MPL",
