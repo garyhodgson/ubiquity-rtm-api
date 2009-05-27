@@ -123,12 +123,11 @@ RTM.constants = {
 	},
 	TEN_MINUTES: 600000,
 	TWENTY_FOUR_HOURS: 86400000,
-	MIN_PREVIEW_HEIGHT: 400,
 	ALWAYS_CREATE_NEW_TIMELINE: false,
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.3.8",
+	VERSION: "0.3.9",
 }
 
 
@@ -1688,8 +1687,8 @@ CmdUtils.CreateCommand({
 		var w = CmdUtils.getWindowInsecure();
 		var offset = w.outerHeight - w.innerHeight
 		var h = (offset < w.innerHeight)? w.innerHeight - offset : w.innerHeight;
-      
-        ptemplate = "<div style=\"min-height:"+RTM.constants.MIN_PREVIEW_HEIGHT+"px;max-height: "+h+"px;overflow-y: scroll;\">";
+ 
+		ptemplate = "<div>";
         ptemplate += "{for item in items}";
         ptemplate += RTM.template.TASK;
         ptemplate += "{/for}";
