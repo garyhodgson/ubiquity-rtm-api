@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
+<html><head>
+
 	<title>garyhodgson.com/ubiquity/rtm</title>
 	<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -13,8 +13,8 @@
 	<div id="title">
 		<table border="0" cellpadding="3" cellspacing="0" class="zeroBorder" width="700">
 			<tbody>
-				<tr>
-					<td style="TEXT-ALIGN:center">
+				<tr>					
+<td style="TEXT-ALIGN:center">
 						<img src="images/rtm/RTM_UBIQUITY_LOGO_1.png" width="160" height="213" alt="Remember The Milk Ubiquity">
 					</td>
 					<td>
@@ -42,7 +42,11 @@
 	<p>&nbsp;</p>
 
 	<div class="toc" id="messages"><h4>Latest News</h4>
-		Version 0.3.8 fixes a small bug introduced with version 0.1.7 of Ubiquity. (25th March 2009)
+		<ul>
+			<li>A new <a href="http://github.com/blog/411-github-issue-tracker">issue tracking feature</a> has been released on github.  You can now <a href="http://github.com/garyhodgson/ubiquity-rtm-api/issues">create issues</a> related to this RTM Ubiquity command. (17th April 2009)
+			<li>Version 0.3.8 fixes a small bug introduced with version 0.1.7 of Ubiquity. (25th March 2009)
+		</ul>
+
 	</div>
 		
 	<h1><a id="About" name="About">About</a></h1>
@@ -90,8 +94,8 @@
 				<ul>
 					<li>to <span class="parameter">[1,2,3,none]</span></li>						
 				</ul>
-			</a>
-		</li>
+			</a>		</li>
+
 		<li><a href="#rtm_move_task" target="_self">rtm-move-task <span class="parameter">taskname</span> 
 				<ul>
 					<li>to <span class="parameter">tasklist</span></li>
@@ -128,8 +132,8 @@
 		<img class="rtm_img" src="images/rtm/login_6.gif"><br>
 		<img class="rtm_img" src="images/rtm/login_7.gif"><br>
 	</blockquote>
-
 	<h3><a id="rtm_refresh" name="rtm_login">rtm-refresh</a></h3>
+
 	<blockquote>
 		<img class="rtm_img" src="images/rtm/refresh_1.gif"><br>
 		<img class="rtm_img" src="images/rtm/refresh_2.gif"><br>
@@ -161,8 +165,8 @@
 	</a></h3>
 	<blockquote>
 		<img class="rtm_img" src="images/rtm/add_task_all_1.gif"><br>
-	</blockquote>
-	
+	</blockquote>	
+
 	<h3><a id="rtm_complete_task" name="rtm_complete_task">rtm-complete-task <span class="parameter">task name</span></a></h3>
 	<blockquote>
 		<img class="rtm_img" src="images/rtm/complete_1.gif"><br>
@@ -260,16 +264,16 @@
 				</li>
 				<li>0.1 - 28 August 2008 - Bookmarklet version created based on an original command by <a href='http://kubasik.net/blog/2008/08/27/remember-the-milk-plugin-for-mozilla-ubiquity/'>Kevin Kubasik</a></li>
 			</ul>
-		</div>
-	</blockquote>
+		</div>	</blockquote>
 
 	<div id="known_issues">
-		<h1><img src="images/rtm/warning.png" style="WIDTH:32px; HEIGHT:32px">&nbsp;&nbsp;<a id="Known_Issues" name="Known_Issues">Known Issues</a></h1>
-	
-		<blockquote>
-			<ul class="known_issues">
 
+		<h1><img src="images/rtm/warning.png" style="WIDTH:32px; HEIGHT:32px">&nbsp;&nbsp;<a id="Known_Issues" name="Known_Issues">Known Issues</a></h1>	
+		<blockquote>
+
+			<ul class="known_issues">
 				<h5>Version 0.3</h5>
+
 				<li>Suggestions are not displayed until a character in the suggestion is actually typed. See <a href="http://labs.toolness.com/trac/ticket/359">Ubiquity bug 359</a>for details.</li>
 				<li>Using a modifier as a legitimate part of a variable (e.g. 'rtm-add-task go to the opera to inbox') would cause the Ubiquity command to fail.  See <a href="http://labs.toolness.com/trac/ticket/358">Ubiquity bug 358</a> for details.</li>
 				<li>Having some text selected in the page is used as an url, whether you have used the url modifier or not.</li>
@@ -281,33 +285,34 @@
 				<li class="completed">If a task or task list is modified externally from the ubiquity command, whilst it is running, the changes are not immediately visible in ubiquity.  I think this is something to do with the time values sent when syncing with RTM and the timezone settings.  I'm looking at this for 0.2.1 or 0.3.
 				</li>
 			</ul>
-		</blockquote>
-	</div>
+		</blockquote>	</div>
 
 	<h1><a id="Caveats_and_Notes" name="Caveats_and_Notes">Caveats and Notes</a></h1>
-
 	<blockquote>
 		<ul>
+
+
 			<li><span class="highlight">The authorisation token is stored locally in your browser, and will remain there until you manually call the 'rtm-logout' function. This means that anyone with access to your PC whilst the RTM Ubiquity command is active can act on your Task Lists!</span> Hopefully they will actually perform the tasks too, but if you work on a shared PC then please bear this in mind.</li>
 			<li>I have only tested this with a small set of task lists and tasks.  If you have millions of tasks (hard luck!) then the command may be slow for you.  I would be interested to know how it holds up in either case, so feel free to <a href="mailto:contact@garyhodgson.com" title="drop me a line">drop me a line</a>!</li>
 			<li>One of the beauties of ubiquity is that it is really easy to take a command you like, and tweak your own copy to meet your own needs. Please feel free to do so with this command, but if you make modifications please use your own <a href="http://www.rememberthemilk.com/services/api/keys.rtm" target="_blank" title="RTM API Key">RTM API Key</a>.  Feel free to <a href="mailto:contact@garyhodgson.com"  target="_blank" title="contact me" >contact me</a> if you have any questions, and I will see what I can do, and the <a href="http://groups.google.com/group/rememberthemilk-api/" target="_blank" title="RTM Google Group">RTM</a> and <a href="http://groups.google.com/group/ubiquity-firefox"  target="_blank" title="Ubiquity Google Group" >Ubiquity</a> forums are pretty handy too.</li>
 		</ul>
-	</blockquote>
-	
+	</blockquote>	
+
 	<h1><a id="Thanks" name="Thanks">Thanks</a>	</h1>
-	<blockquote>
-		<ul>
+	<blockquote>		<ul>
+
 			<li><a href="http://delete.me.uk/2005/03/iso8601.html" target="_blank" title="ISO8601 Date function from Paul Sowden" >ISO8601 Date function from Paul Sowden</a></li>
 			<li><a href="http://pajhome.org.uk/crypt/md5" target="_blank" title="Javascript MD5 implementation from&nbsp;Paul Johnston" >Javascript MD5 implementation from&nbsp;Paul Johnston</a></li>
 			<li><a href="http://dean.edwards.name/packer/" target="_blank" title="Javascript packer from&nbsp;Dean Edwards">Javascript packer from&nbsp;Dean Edwards</a></li>
 			<li><a href="http://www.sxc.hu/photo/189279">Image of milk carton</a> by <a href="http://www.broken-arts.com/" target="_blank">brokenarts</a> (<a href="http://www.sxc.hu/profile/brokenarts">via sxc.hu</a>)</li>
 		</ul>
 	</blockquote>
-
 	<br><br>
+
 </div>
 
 <script src="js-util/google-analytics.js"></script>
 
-</body>
-</html>    
+</body></html>    
+
+
