@@ -5,7 +5,7 @@
  * source: "http://github.com/garyhodgson/ubiquity-rtm-api", 
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.3.8" 
+ * version: "0.3.9" 
 */
 
 /**
@@ -1442,6 +1442,7 @@ CmdUtils.CreateCommand({
         }         
         if (!directObject.text) {
             return;
+
         }
 
 		var task = RTM.tasks.get_task(directObject.data) || null;
