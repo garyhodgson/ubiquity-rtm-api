@@ -120,6 +120,7 @@ RTM.constants = {
 		PROBLEM_ADDING_TASK_NOTE: "A problem occurred adding a note for the task.",
 		PROBLEM_POSTPONING_TASK: "A problem occurred postponing the task.",
 		PROBLEM_COMPLETING_TASK: "A problem occurred completing the task.",
+		TASK_ADDED_INBOX: "Cannot add to a smart list. Task added to Inbox.",
 	},
 	TEN_MINUTES: 600000,
 	TWENTY_FOUR_HOURS: 86400000,
@@ -832,6 +833,8 @@ RTM.tasks = function(){
 	}
 	
 	function _update(force, async, markSmartLists) {
+CmdUtils.log("in RTM.tasks._update");		
+		
 	    if (!RTM.check_token()) {
 	        return null;
 	    }
@@ -843,13 +846,21 @@ RTM.tasks = function(){
     	} else {
     		// If there is no lastUpdate then we only want to get all the incomplete tasks.
     		apiParams.filter = "status:incomplete";
-    	}    	
+    	}
+
+
+CmdUtils.log(apiParams);		
+CmdUtils.log("apiParams.last_sync:" + apiParams.last_sync);    	 
+
+   	
 		var successCallback = function(j){
 			var tasks = (force) ? new Object() : Application.storage.get(RTM.constants.store.TASKS, new Object());
 			var t = j.tasks;
 			
+CmdUtils.log("t.list.length: ", t.list.length);
+
 			for (var i in t.list){
-				var list = t.list[i];
+				var list = t.list[i];				
 				var listName = RTM.lists.get_list_name(list.id);
 				if (!RTM.lists.is_smart_list(list.id)){
 					tasks = _add_new_tasks_and_remove_completed_tasks(tasks, list);	
@@ -868,6 +879,8 @@ RTM.tasks = function(){
 			
 			Application.storage.set(RTM.constants.store.LAST_TASKS_UPDATE, RTM.get_time());
 			_lastUpdated = Application.storage.get(RTM.constants.store.LAST_TASKS_UPDATE, null)
+
+CmdUtils.log("_lastUpdated: " + _lastUpdated);
 
 			Application.storage.set(RTM.constants.store.TASKS, tasks);
 			_tasks = tasks;
@@ -928,16 +941,22 @@ RTM.tasks = function(){
 			if (!taskseries.length){
 				if (taskseries.task.completed){
 					delete tasks[taskseries.id];
+CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: delete ' + taskseries.id);
 				} else {
 					tasks[taskseries.id] = _format_task(taskseries, list.id);
+CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: add taskseries ' + taskseries.id);		
+CmdUtils.log(tasks[taskseries.id]);		
 				}
 			} else {
 				for (var j in taskseries){
 					var ts = taskseries[j];
 					if (ts.task.completed){
 						delete tasks[ts.id];
+CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: delete ' + ts.id);
 					} else {
 						tasks[ts.id] = _format_task(ts, list.id);
+CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: add task ' + ts.id);
+CmdUtils.log(tasks[ts.id]);		
 					}
 				}		
 			}
@@ -950,9 +969,11 @@ RTM.tasks = function(){
 			var deletedTaskSeries = deletedTasksList.taskseries;
 			if (!deletedTaskSeries.length){
 				delete tasks[deletedTaskSeries.id];
+CmdUtils.log('_remove_deleted_tasks : deleted ' + deletedTaskSeries.id);
 			} else {
 				for (var k in deletedTaskSeries){
 					delete tasks[deletedTaskSeries[k].id];
+CmdUtils.log('_remove_deleted_tasks : deleted ' + deletedTaskSeries[k].id);
 				}		
 			}
 		}
@@ -1059,7 +1080,7 @@ RTM.tasks = function(){
 						}
 					}
 				}
-			}
+			}			
 			return matchingTasks;
 		}
 	};
@@ -1085,8 +1106,10 @@ CmdUtils.CreateCommand({
 			RTM.login();
             return;
         }
+
 		RTM.lists.update();
 		RTM.tasks.force_update_all();
+
         displayMessage("Refresh Complete!");        
        },
     preview: function(previewBlock, directObject, mods) {
@@ -1237,17 +1260,24 @@ CmdUtils.CreateCommand({
         	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
             return;
         }
+        var successMessage = RTM.constants.msg.TASK_ADDED;
         var taskName = directObject.text;
         var tags = mods.tags.text || null;
         var priority = mods.pri.data || null;
         var listId = mods.to.data || RTM.prefs.get(RTM.constants.pref.DEFAULT_LIST, null);
+        if (RTM.lists.is_smart_list(listId)) {
+        	listId = RTM.lists.get_list_id("Inbox");
+        	successMessage = RTM.constants.msg.TASK_ADDED_INBOX;
+		} 
+        
         var url = mods.url.text || null;
         if (url){
     	    url = (Utils.trim(url) == "this") ? (CmdUtils.getWindowInsecure().location.href || "") : Utils.trim(url);
 			url = RTM.utils.format_url(url);
 		}
+		
 		if (RTM.add_task(taskName, listId, url, priority, tags)){
-			displayMessage(RTM.constants.msg.TASK_ADDED);
+			displayMessage(successMessage);
 			RTM.tasks.async_update_all();
 		} else {
 			displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK);
@@ -1598,6 +1628,10 @@ CmdUtils.CreateCommand({
         previewBlock.innerHTML = CmdUtils.renderTemplate(RTM.template.TASK, previewData);
     },
     execute: function(directObject, mods) {
+
+CmdUtils.log(directObject);
+CmdUtils.log(mods);
+    	
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
             RTM.login();
@@ -1620,6 +1654,8 @@ CmdUtils.CreateCommand({
 
         if (RTM.complete_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
 			displayMessage(RTM.constants.msg.TASK_COMPLETED);
+CmdUtils.log("calling async_update_all");		
+
 			RTM.tasks.async_update_all();
 		} else {
 			displayMessage(RTM.constants.msg.PROBLEM_COMPLETING_TASK);
@@ -1669,7 +1705,6 @@ CmdUtils.CreateCommand({
         	previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         }
-
         var tasks = RTM.tasks.get_tasks(false);
         if (!tasks) {
         	previewBlock.innerHTML = 'No tasks found. Press enter to force a sync with RTM.';
@@ -1701,7 +1736,7 @@ CmdUtils.CreateCommand({
         	rootUrl: RTM.constants.url.ROOT_URL,
         	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
     	}
-    	    	
+    	
         previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
 
     }
