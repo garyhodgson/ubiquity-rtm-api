@@ -1717,12 +1717,8 @@ CmdUtils.CreateCommand({
 		var tag = mods.tag.text || null;
 
 		var subTasks = RTM.tasks.findMatchingTasks(task, list, priority, tag);
-					
+		
 		subTasks.sort(RTM.utils.sort_tasks_algorithm);
-        
-		var w = CmdUtils.getWindowInsecure();
-		var offset = w.outerHeight - w.innerHeight
-		var h = (offset < w.innerHeight)? w.innerHeight - offset : w.innerHeight;
  
 		ptemplate = "<div>";
         ptemplate += "{for item in items}";
