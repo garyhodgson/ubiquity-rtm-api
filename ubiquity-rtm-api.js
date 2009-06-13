@@ -134,19 +134,19 @@ RTM.constants = {
 
 RTM.prefs = {
     has: function(key) {
-/* This comment is a placeholder to be replaced with unit test statements */
+
     	return Application.prefs.has(key) && Application.prefs.get(key).value != undefined;
     },
     set: function(key, value) {
-/* This comment is a placeholder to be replaced with unit test statements */    	
+    	
         Application.prefs.setValue(key, value);
     },
     get: function(key, defaultValue) {
-/* This comment is a placeholder to be replaced with unit test statements */
+
         return (this.has(key)) ? Application.prefs.get(key).value: defaultValue;
     },
     remove: function(key) {
-/* This comment is a placeholder to be replaced with unit test statements */
+
         if (this.has(key)) Application.prefs.get(key).reset();
     },
     remove_all: function() {	
@@ -246,7 +246,7 @@ RTM.utils = {
 
 RTM.check_token = function() {
 
-/* This comment is a placeholder to be replaced with unit test statements */
+
 
 	var token = RTM.prefs.get(RTM.constants.pref.AUTH_TOKEN, null);
 
@@ -312,7 +312,7 @@ RTM.create_rtm_parameter_string = function(apiParams) {
 
 RTM.rtm_call_json_async = function(apiParams, successCallback){
 
-/* This comment is a placeholder to be replaced with unit test statements */
+
 
 	apiParams.format = 'json';
 	jQuery.ajax({
@@ -333,7 +333,7 @@ RTM.rtm_call_json_async = function(apiParams, successCallback){
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
 
-/* This comment is a placeholder to be replaced with unit test statements */
+
 
 	apiParams.format = 'json';
 	var r = jQuery.ajax({
@@ -358,7 +358,7 @@ RTM.rtm_call_json_sync = function(apiParams, successCallback){
 
 RTM.rtm_call_xml_sync = function(apiParams, successCallback){
 
-/* This comment is a placeholder to be replaced with unit test statements */
+
 	var r = jQuery.ajax({
 		type: "POST",
 		url: RTM.constants.url.API_URL,
@@ -646,7 +646,7 @@ RTM.tag_task = function(taskId, seriesId, listId,  tags){
 
 RTM.lists = function(){
 
-/* This comment is a placeholder to be replaced with unit test statements */
+
 
 	var _lists = _get_lists();
 	var _regular = _get_regular_list_names();
@@ -753,7 +753,7 @@ RTM.lists = function(){
  */
 RTM.tasks = function(){
 
-/* This comment is a placeholder to be replaced with unit test statements */
+
 
 	var _lastUpdated = Application.storage.get(RTM.constants.store.LAST_TASKS_UPDATE, null) ;	
 		
@@ -783,6 +783,14 @@ RTM.tasks = function(){
 	
 	function _format_task(taskseries, listId){
 		if (!taskseries) return;
+		
+		// this is a hack to workaround the strange data model returned after a repeating task is read from the RTM service.
+		// See http://github.com/garyhodgson/ubiquity-rtm-api/issues/#issue/3
+
+		var taskInstance = (taskseries.task.length) ? taskseries.task[1] : taskseries.task;
+		CmdUtils.log("taskInstance");
+		CmdUtils.log(taskInstance);
+		taskseries.task = taskInstance;
 		
 		taskseries.name = RTM.utils.escape(taskseries.name);
 		if (taskseries.task.due && taskseries.task.due.length > 0){
@@ -851,7 +859,6 @@ CmdUtils.log("in RTM.tasks._update");
 
 CmdUtils.log(apiParams);		
 CmdUtils.log("apiParams.last_sync:" + apiParams.last_sync);    	 
-
    	
 		var successCallback = function(j){
 			var tasks = (force) ? new Object() : Application.storage.get(RTM.constants.store.TASKS, new Object());
@@ -935,34 +942,36 @@ CmdUtils.log("_lastUpdated: " + _lastUpdated);
 						: RTM.rtm_call_json_sync(apiParams, successCallback);
 	}
 	
-	function _add_new_tasks_and_remove_completed_tasks(tasks, list){
-		if (list.taskseries){
-			var taskseries = list.taskseries;
-			if (!taskseries.length){
-				if (taskseries.task.completed){
-					delete tasks[taskseries.id];
+function _add_new_tasks_and_remove_completed_tasks(tasks, list){
+    if (list.taskseries){
+      var taskseries = list.taskseries;
+      if (!taskseries.length){
+        if (taskseries.task.completed){
+          delete tasks[taskseries.id];
 CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: delete ' + taskseries.id);
-				} else {
-					tasks[taskseries.id] = _format_task(taskseries, list.id);
-CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: add taskseries ' + taskseries.id);		
-CmdUtils.log(tasks[taskseries.id]);		
-				}
-			} else {
-				for (var j in taskseries){
-					var ts = taskseries[j];
-					if (ts.task.completed){
-						delete tasks[ts.id];
+        } else {
+          tasks[taskseries.id] = _format_task(taskseries, list.id);
+CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: add taskseries ' + taskseries.id);    
+CmdUtils.log(tasks[taskseries.id]);    
+        }
+      } else {
+        for (var j in taskseries){
+          var ts = taskseries[j];
+          if (ts.task.completed){
+            delete tasks[ts.id];
 CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: delete ' + ts.id);
-					} else {
-						tasks[ts.id] = _format_task(ts, list.id);
+          } else {
+            tasks[ts.id] = _format_task(ts, list.id);
 CmdUtils.log('_add_new_tasks_and_remove_completed_tasks: add task ' + ts.id);
-CmdUtils.log(tasks[ts.id]);		
-					}
-				}		
-			}
-		}
-		return tasks;
-	}
+CmdUtils.log(tasks[ts.id]);    
+          }
+        }    
+      }
+    }
+    return tasks;
+  }
+	
+	
 	function _remove_deleted_tasks(tasks, deletedTasksList){
 		if (deletedTasksList && deletedTasksList.taskseries) {
 			// deleted entries
@@ -1683,6 +1692,7 @@ CmdUtils.CreateCommand({
         tag: new RtmNounType("Tag", RTM.tasks.get_tag_array),
     },
     execute: function(directObject, mods) {
+    	
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
             RTM.login();
@@ -1700,7 +1710,8 @@ CmdUtils.CreateCommand({
         Utils.openUrlInBrowser(RTM.constants.url.ROOT_URL, null);
     },
     preview: function(previewBlock, directObject, mods) {
-        previewBlock.innerHTML = this.description;
+        previewBlock.innerHTML = this.description;        
+        
     	if (!RTM.check_token()) {
         	previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
