@@ -989,6 +989,10 @@ CmdUtils.log('_remove_deleted_tasks : deleted ' + deletedTaskSeries[k].id);
 		return tasks;
 	}
 	function _update_task_names(){
+		
+CmdUtils.log('_update_task_names');		
+CmdUtils.log(_tasks);		
+		
 		if (!_tasks) return null;
 		
 	    _taskNames = new Object();
@@ -998,6 +1002,10 @@ CmdUtils.log('_remove_deleted_tasks : deleted ' + deletedTaskSeries[k].id);
 	       c++;
 	    }
 	    Application.storage.set(RTM.constants.store.TASKNAMES, _taskNames);
+
+CmdUtils.log('_taskNames');		
+CmdUtils.log(_taskNames);	
+
 	    return _taskNames;
 	}
 	function _update_tag_list(){
@@ -1100,7 +1108,7 @@ CmdUtils.log('_remove_deleted_tasks : deleted ' + deletedTaskSeries[k].id);
  *
  */
 CmdUtils.CreateCommand({
-    name: "rtm-refresh",  
+    names: ["refresh tasks", "rtm-refresh"],  
     homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
@@ -1109,7 +1117,20 @@ CmdUtils.CreateCommand({
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "Force a refresh of all tasks and tasklists from RTM.",
-    execute: function(directObject, mods) {
+    preview: function(pBlock, args) {
+        if (!RTM.check_token()) {
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            return;
+        }
+        
+        var p = this.description;
+        p += "<br><br>";
+        p += "Current Status:";
+        p += "<br><br>";
+        p += RTM.template.STATUS;
+        pBlock.innerHTML = CmdUtils.renderTemplate(p, RTM.status_data());
+    },
+    execute: function(args) {
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
 			RTM.login();
@@ -1120,26 +1141,13 @@ CmdUtils.CreateCommand({
 		RTM.tasks.force_update_all();
 
         displayMessage("Refresh Complete!");        
-       },
-    preview: function(previewBlock, directObject, mods) {
-        if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
-            return;
-        }
-        
-        var p = this.description;
-        p += "<br><br>";
-        p += "Current Status:";
-        p += "<br><br>";
-        p += RTM.template.STATUS;
-        previewBlock.innerHTML = CmdUtils.renderTemplate(p, RTM.status_data());
-    }
+	}
 });
 
 
 
 CmdUtils.CreateCommand({
-    name: "rtm-logout",
+    names: ["logout rtm", "rtm-logout"],
 	homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
@@ -1148,16 +1156,16 @@ CmdUtils.CreateCommand({
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "RTM Logout.  Removes all traces of the ubiquity command.",
-    preview: function(previewBlock, directObject, mods) {
+    preview: function(pBlock, args) {
 
     	var p = "RTM Ubiquity Status.<br><br>";
 		p += RTM.template.STATUS;
 		p += "<br><br>";
         p += "<span style=\"color:red;\">Warning!</span> Pressing Enter will clear all stored data for the RTM Ubiquity Command. Are you sure?";
              
-        previewBlock.innerHTML = CmdUtils.renderTemplate(p, RTM.status_data());
+        pBlock.innerHTML = CmdUtils.renderTemplate(p, RTM.status_data());
     },
-    execute: function(directObject, mods) {
+    execute: function(args) {
         RTM.prefs.remove_all();
     	for (var c in RTM.constants.store){
 	    	Application.storage.set(RTM.constants.store[c], null);
@@ -1169,7 +1177,7 @@ CmdUtils.CreateCommand({
 
 
 CmdUtils.CreateCommand({
-    name: "rtm-login",
+    names: ["login rtm", "rtm-login"],
     homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
@@ -1178,14 +1186,14 @@ CmdUtils.CreateCommand({
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "RTM Login. Directs the user to RTM for an authorisation token.",
-    preview: function(previewBlock, directObject, mods) {
+    preview: function(pBlock, args) {
         if (RTM.check_token()) {
-            previewBlock.innerHTML = 'Authorisation token found. You\'re good to go!';
+            pBlock.innerHTML = 'Authorisation token found. You\'re good to go!';
         } else {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
         }
     },
-    execute: function(directObject, mods) {
+    execute: function(args) {
         if (RTM.check_token()) {
             displayMessage('Valid Token found. Please logout first.');
         } else {
@@ -1196,7 +1204,7 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-    name: "rtm-add-task",
+    names: ["rtm-add-task"],
     homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
@@ -1205,29 +1213,27 @@ CmdUtils.CreateCommand({
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "Add a task to RTM.",
-    takes: {
-        task: noun_arb_text
-    },
-    modifiers: {
-        to: new RtmNounType("Task List", RTM.lists.get_regular_list_names),
-        pri: new RtmNounType( "Priority", {"1":"1","2":"2","3":"3","N":"None"} ),
-        url: noun_arb_text,
-        tags: noun_arb_text,
-    },
-    preview: function(previewBlock, directObject, mods) {
-		previewBlock.innerHTML = this.description;
+    arguments: [
+		{role: 'object', label: 'Task', nountype: noun_arb_text},
+		{role: 'goal', label: 'Task List', nountype: new RtmNounType("Task List", RTM.lists.get_regular_list_names)},
+		{role: 'modifier', label: 'Priority', nountype: new RtmNounType( "Priority", {"1":"1","2":"2","3":"3","N":"None"} )},
+		{role: 'instrument', label: 'Url', nountype: noun_arb_text},
+		{role: 'format', label: 'Tags', nountype: noun_arb_text},
+	],
+    preview: function(pBlock, args) {
+		pBlock.innerHTML = this.description;
         if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         }
         
         var defaultListName = RTM.lists.get_list_name(RTM.prefs.get(RTM.constants.pref.DEFAULT_LIST, null))||'Inbox';
         
-        var taskName = directObject.summary || null;
-        var tags = (mods.tags.text) ? mods.tags.text.split() : [];
-        var priority = mods.pri.data || null;
-        var listName = mods.to.text || defaultListName;
-        var url = mods.url.text || null;        
+        var taskName = args.object.summary || null;
+        var tags = (args.format.text) ? args.format.text.split() : [];
+        var priority = args.modifier.data || null;
+        var listName = args.goal.text || defaultListName;
+        var url = args.instrument.text || null;        
         if (url){
     	    url = (Utils.trim(url) == "this") ? (CmdUtils.getWindowInsecure().location.href || "") : Utils.trim(url);
 			url = RTM.utils.format_url(url);
@@ -1237,7 +1243,7 @@ CmdUtils.CreateCommand({
         	id: "",
 			name: taskName,
 			task: {
-				priority:mods.pri.text||""
+				priority:args.modifier.text||""
 			},
 			tags: tags,
 			list_name: listName,
@@ -1256,30 +1262,30 @@ CmdUtils.CreateCommand({
 		ptemplate += RTM.template.TASK;
 		
 
-        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
+        pBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
         
     },
-    execute: function(directObject, mods) {
+    execute: function(args) {	
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
 			RTM.login();
             return;
         }
-        if (!directObject.text){
+        if (!args.object.text){
         	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
             return;
         }
         var successMessage = RTM.constants.msg.TASK_ADDED;
-        var taskName = directObject.text;
-        var tags = mods.tags.text || null;
-        var priority = mods.pri.data || null;
-        var listId = mods.to.data || RTM.prefs.get(RTM.constants.pref.DEFAULT_LIST, null);
+        var taskName = args.object.text;
+        var tags = args.format.text || null;
+        var priority = args.modifier.data || null;
+        var listId = args.goal.data || RTM.prefs.get(RTM.constants.pref.DEFAULT_LIST, null);
         if (RTM.lists.is_smart_list(listId)) {
         	listId = RTM.lists.get_list_id("Inbox");
         	successMessage = RTM.constants.msg.TASK_ADDED_INBOX;
 		} 
         
-        var url = mods.url.text || null;
+        var url = args.instrument.text || null;
         if (url){
     	    url = (Utils.trim(url) == "this") ? (CmdUtils.getWindowInsecure().location.href || "") : Utils.trim(url);
 			url = RTM.utils.format_url(url);
@@ -1295,7 +1301,7 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-    name: "rtm-note-task",
+    names: ["rtm-note-task"],
     homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
@@ -1304,24 +1310,22 @@ CmdUtils.CreateCommand({
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "Adds a note to a task in RTM.",
-    takes: {
-        note: noun_arb_text
-    },
-    modifiers: {
-		title: noun_arb_text,
-		to: new RtmNounType("Task", RTM.tasks.get_task_names),
-    },
-    preview: function(previewBlock, directObject, mods) {
-		previewBlock.innerHTML = this.description;
+    arguments: [
+		{role: 'object', label: 'Note', nountype: noun_arb_text},
+		{role: 'instrument', label: 'Title', nountype: noun_arb_text},
+		{role: 'goal', nountype: new RtmNounType("Task", RTM.tasks.get_task_names)},
+	],
+    preview: function(pBlock, args) {
+		pBlock.innerHTML = this.description;
         if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         }
             
-        var note = directObject.summary || null;
-        var taskName = mods.to.text || null;
-        var title = mods.title.text || null;
-        var taskId = mods.to.data || null;
+        var note = args.object.summary || null;
+        var taskName = args.goal.text || null;
+        var title = args.instrument.text || null;
+        var taskId = args.goal.data || null;
 
         var task = RTM.tasks.get_task(taskId);
         
@@ -1351,24 +1355,24 @@ CmdUtils.CreateCommand({
 		ptemplate += "  <li>&nbsp;{if (newNoteTitle)}<em>${newNoteTitle}</em><br/>{/if}{if (newNote)}<b>${newNote}</b>{/if}"
 		ptemplate += " </div>"		
 
-        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
+        pBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
         
     },
-    execute: function(directObject, mods) {
+    execute: function(args) {
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
 			RTM.login();
             return;
         }
-        if (!directObject.text){
+        if (!args.object.text){
         	displayMessage(RTM.constants.msg.NOTE_TEXT_REQUIRED);
             return;
         }
         
-        var note = directObject.text || null;
-        var taskId = mods.to.data || null;
+        var note = args.object.text || null;
+        var taskId = args.goal.data || null;
 		var taskSeries = RTM.tasks.get_task(taskId);
-        var title = mods.title.text || null;
+        var title = args.instrument.text || null;
         
         if (!taskSeries){
         	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
@@ -1385,7 +1389,7 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-	name: "rtm-prioritise-task",
+	names: ["rtm-prioritise-task"],
     homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
 		name: "Gary Hodgson",
@@ -1394,29 +1398,29 @@ CmdUtils.CreateCommand({
 	license: "MPL",
 	icon: "http://www.rememberthemilk.com/favicon.ico",
 	description: "Prioritises a task in RTM.",
-	takes: {
-		task: new RtmNounType("Task Names",   RTM.tasks.get_task_names),
-	},
-	modifiers: {
-		to: new RtmNounType( "Priority", {"1":"1","2":"2","3":"3","N":"None"} )
-	},
-    preview: function(previewBlock, directObject, mods) {
+	arguments: [
+		{role: 'object', label: 'Task Names', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)},
+		{role: 'goal', nountype: new RtmNounType( "Priority", {"1":"1","2":"2","3":"3","N":"None"} )},
+	],
+    preview: function(pBlock, args) {
     	
-    	previewBlock.innerHTML = this.description;
+    	pBlock.innerHTML = this.description;
         if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         } 
-		if (!directObject.text) {
-			previewBlock.innerHTML = "Unable to find tasks.";
+		if (!args.object.text) {
+			pBlock.innerHTML = "Unable to find task.";
             return;
         }
 
-		var task = RTM.tasks.get_task(directObject.data) || null;
+		var task = RTM.tasks.get_task(args.object.data) || null;
 		if (!task) {
-			previewBlock.innerHTML = "Unable to find task in task lists.";
+			pBlock.innerHTML = "Unable to find task in task lists.";
 			return; 
 		}
+		
+		task.task.priority = args.goal.text || 'N';
     		
         var previewData = {
         	item: task,
@@ -1424,30 +1428,30 @@ CmdUtils.CreateCommand({
         	rootUrl: RTM.constants.url.ROOT_URL,
         }; 
 
-        previewBlock.innerHTML = CmdUtils.renderTemplate(RTM.template.TASK, previewData);
+        pBlock.innerHTML = CmdUtils.renderTemplate(RTM.template.TASK, previewData);
     },
-    execute: function(directObject, mods) { 
+    execute: function(args) { 
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
             RTM.login();
             return;
         }
-        if (!directObject.text) {
+        if (!args.object.text) {
             displayMessage('No task given to prioritise.');
             return;
         }
-        if (!mods.to.text){
+        if (!args.goal.text){
         	displayMessage('No priority given.');
             return;
         }
-        var taskSeries = RTM.tasks.get_task(directObject.data);
+        var taskSeries = RTM.tasks.get_task(args.object.data);
         if (!taskSeries) {
             displayMessage('Unable to find that task in your Task Lists.');
             return;
         }
 
-		if (RTM.prioritise_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, mods.to.text)){
-			displayMessage('Task priority set to ' + mods.to.text);	
+		if (RTM.prioritise_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, args.goal.text)){
+			displayMessage('Task priority set to ' + args.goal.text);	
 		} else {
 			displayMessage(PROBLEM_PRIORITISING_TASK);
 		}
@@ -1456,7 +1460,7 @@ CmdUtils.CreateCommand({
 });
 
 CmdUtils.CreateCommand({
-	name: "rtm-move-task",
+	names: ["rtm-move-task"],
     homepage: "http://www.garyhodgson.com/ubiquity",
 	author: {
 		name: "Gary Hodgson",
@@ -1465,38 +1469,36 @@ CmdUtils.CreateCommand({
 	license: "MPL",
 	icon: "http://www.rememberthemilk.com/favicon.ico",
 	description: "Moves a task between task lists in RTM.",
-	takes: {
-		task: new RtmNounType("Task Names",   RTM.tasks.get_task_names),
-	},
-	modifiers: {
-		to: new RtmNounType("Task List", RTM.lists.get_regular_list_names)
-	},
-    preview: function(previewBlock, directObject, mods) {
+	arguments: [
+		{role: 'object', label: 'Task', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)},
+		{role: 'goal', nountype: new RtmNounType("Task List", RTM.lists.get_regular_list_names)},
+	],
+    preview: function(pBlock, args) {
 
-    	previewBlock.innerHTML = this.description;
+    	pBlock.innerHTML = this.description;
 
         if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         }         
-        if (!directObject.text) {
+        if (!args.object.text) {
             return;
 
         }
 
-		var task = RTM.tasks.get_task(directObject.data) || null;
+		var task = RTM.tasks.get_task(args.object.data) || null;
 		if (!task) {
-			previewBlock.innerHTML = "Unable to find task in task lists.";
+			pBlock.innerHTML = "Unable to find task in task lists.";
 			return; 
 		}
-        var toList = mods.to.text || '';
+        var toList = args.goal.text || '';
         var fromList = RTM.lists.get_list_name(task.list_id) || '';
             		
         var previewData = {
         	item: task,
         	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
         	rootUrl: RTM.constants.url.ROOT_URL,
-        	task: directObject.summary,
+        	task: args.object.summary,
         	from: fromList,
         	to: toList,
 		}; 
@@ -1505,30 +1507,30 @@ CmdUtils.CreateCommand({
 		ptemplate += "<br><br>";
 		ptemplate += RTM.template.TASK;
 
-        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
+        pBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
 
     },
-    execute: function(directObject, mods) {
+    execute: function(args) {
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
             RTM.login();
             return;
         }
-        if (!directObject.text) {
+        if (!args.object.text) {
             displayMessage('No task given to move.');
             return;
         }
-        if (!mods.to.text){
+        if (!args.goal.text){
         	displayMessage('No target task list given.');
             return;
         }
-        var taskSeries = RTM.tasks.get_task(directObject.data);
+        var taskSeries = RTM.tasks.get_task(args.object.data);
         if (!taskSeries) {
             displayMessage('Unable to find that task in your Task Lists.');
             return;
         }
 
-		if (RTM.move_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, mods.to.data)){
+		if (RTM.move_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, args.goal.data)){
 			displayMessage(RTM.constants.msg.TASK_MOVED);
 			RTM.tasks.async_update_all();
 		} else {
@@ -1539,7 +1541,7 @@ CmdUtils.CreateCommand({
 
 
 CmdUtils.CreateCommand({
-	name: "rtm-postpone-task",
+	names: ["rtm-postpone-task"],
     homepage: "http://www.garyhodgson.com/ubiquity",
 	author: {
 		name: "Gary Hodgson",
@@ -1548,21 +1550,19 @@ CmdUtils.CreateCommand({
 	license: "MPL",
 	icon: "http://www.rememberthemilk.com/favicon.ico",
 	description: "Postpones a task in RTM.",
-	takes: {
-		task: new RtmNounType("Task Names",   RTM.tasks.get_task_names),
-	},    
-    preview: function(previewBlock, directObject) {
-    	previewBlock.innerHTML = this.description;
+	arguments: [{role: 'object', label: 'Task Names', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)}],
+    preview: function(pBlock, args) {
+    	pBlock.innerHTML = this.description;
         if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         } 
-        if (!directObject.text) {
+        if (!args.object.text) {
             return;
         }
-        var task = RTM.tasks.get_task(directObject.data) || null;
+        var task = RTM.tasks.get_task(args.object.data) || null;
 		if (!task) {
-			previewBlock.innerHTML = "Unable to find task in task lists.";
+			pBlock.innerHTML = "Unable to find task in task lists.";
 			return; 
 		}
     		
@@ -1572,19 +1572,19 @@ CmdUtils.CreateCommand({
         	rootUrl: RTM.constants.url.ROOT_URL,
         }; 
 
-        previewBlock.innerHTML = CmdUtils.renderTemplate(RTM.template.TASK, previewData);
+        pBlock.innerHTML = CmdUtils.renderTemplate(RTM.template.TASK, previewData);
     },
-    execute: function(directObject, mods) {
+    execute: function(args) {
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
             RTM.login();
             return;
         }    
-        if (!directObject.text) {
+        if (!args.object.text) {
             displayMessage('No task given to postpone.');
             return;
         }
-        var taskSeries = RTM.tasks.get_task(directObject.data);
+        var taskSeries = RTM.tasks.get_task(args.object.data);
         if (!taskSeries) {
             displayMessage('Unable to find that task in your Task Lists.');
             return;
@@ -1601,7 +1601,7 @@ CmdUtils.CreateCommand({
 
 
 CmdUtils.CreateCommand({
-    name: "rtm-complete-task",
+    names: ["rtm-complete-task"],
     homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
@@ -1609,22 +1609,21 @@ CmdUtils.CreateCommand({
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "Complete task in RTM.",
-    takes: {
-        task: new RtmNounType("Task Names", RTM.tasks.get_task_names),
-    },    
-    preview: function(previewBlock, directObject) {
+	arguments: [{role: 'object', label: 'Task Names', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)}],
+    preview: function(pBlock, args) {
+    	
         if (!RTM.check_token()) {
-            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         } 
-        if (!directObject.text) {
-            previewBlock.innerHTML = this.description;
+        if (!args.object.text) {
+            pBlock.innerHTML = this.description;
             return;
         }
         
-		var task = RTM.tasks.get_task(directObject.data) || null;
+		var task = RTM.tasks.get_task(args.object.data) || null;
 		if (!task) {
-			previewBlock.innerHTML = "Unable to find task in task lists.";
+			pBlock.innerHTML = "Unable to find task in task lists.";
 			return; 
 		}
 		
@@ -1634,19 +1633,15 @@ CmdUtils.CreateCommand({
         	rootUrl: RTM.constants.url.ROOT_URL,
         }; 
 
-        previewBlock.innerHTML = CmdUtils.renderTemplate(RTM.template.TASK, previewData);
+        pBlock.innerHTML = CmdUtils.renderTemplate(RTM.template.TASK, previewData);
     },
-    execute: function(directObject, mods) {
-
-CmdUtils.log(directObject);
-CmdUtils.log(mods);
-    	
+    execute: function(args) {
         if (!RTM.check_token()) {
             displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
             RTM.login();
             return;
         }        
-        if (!directObject.text) {
+        if (!args.object.text) {
             displayMessage('No task given to complete.');
             return;
         }
@@ -1655,7 +1650,7 @@ CmdUtils.log(mods);
             displayMessage('Unable to find any tasks in your Task Lists.');
             return;
         }
-        var taskSeries = tasks[directObject.data];
+        var taskSeries = tasks[args.object.data];
         if (!taskSeries) {
             displayMessage('Unable to find that task in your Task Lists.');
             return;
@@ -1663,8 +1658,6 @@ CmdUtils.log(mods);
 
         if (RTM.complete_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
 			displayMessage(RTM.constants.msg.TASK_COMPLETED);
-CmdUtils.log("calling async_update_all");		
-
 			RTM.tasks.async_update_all();
 		} else {
 			displayMessage(RTM.constants.msg.PROBLEM_COMPLETING_TASK);
@@ -1672,9 +1665,8 @@ CmdUtils.log("calling async_update_all");
     }
 });
 
-
 CmdUtils.CreateCommand({
-    name: "rtm-view-tasks",
+    names: ["rtm-view-tasks"],
     homepage: "http://www.garyhodgson.com/ubiquity",
     author: {
         name: "Gary Hodgson",
@@ -1683,49 +1675,29 @@ CmdUtils.CreateCommand({
     license: "MPL",
     icon: "http://www.rememberthemilk.com/favicon.ico",
     description: "View a list of RTM Tasks.",
-    takes: {
-        task: noun_arb_text
-    },
-    modifiers: { 
-    	in : new RtmNounType("Task List", RTM.lists.get_all_list_names),
-        pri: new RtmNounType("Priority", {"1":"1","2":"2","3":"3","N":"None"} ),
-        tag: new RtmNounType("Tag", RTM.tasks.get_tag_array),
-    },
-    execute: function(directObject, mods) {
-    	
-        if (!RTM.check_token()) {
-            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
-            RTM.login();
-            return;
-        }
-        
-        if (!RTM.tasks.get_tasks(false)) {
-        	displayMessage('Syncing with RTM.');
-        	RTM.lists.update();        
-			RTM.tasks.force_update_all();
-        	displayMessage('Sync with RTM complete.');
-        	return;
-        }
-        
-        Utils.openUrlInBrowser(RTM.constants.url.ROOT_URL, null);
-    },
-    preview: function(previewBlock, directObject, mods) {
-        previewBlock.innerHTML = this.description;        
+    arguments: [ 	
+    	{role: 'object', label: 'task', nountype: noun_arb_text},
+        {role: 'source', nountype: new RtmNounType("Task List", RTM.lists.get_all_list_names)},
+  		{role: 'modifier', nountype: new RtmNounType("Priority", {"1":"1","2":"2","3":"3","N":"None"})}, 
+        {role: 'instrument', nountype: new RtmNounType("Tag", RTM.tasks.get_tag_array)}
+    ],
+    preview: function(pblock, args) {
+        pblock.innerHTML = this.description;        
         
     	if (!RTM.check_token()) {
-        	previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+        	pblock.innerHTML = RTM.constants.msg.LOGIN_MSG;
             return;
         }
         var tasks = RTM.tasks.get_tasks(false);
         if (!tasks) {
-        	previewBlock.innerHTML = 'No tasks found. Press enter to force a sync with RTM.';
+        	pblock.innerHTML = 'No tasks found. Press enter to force a sync with RTM.';
             return;
         }
 
-		var task = ".*"+directObject.text.replace(/^\s+|\s+$/g,"")+".*";
-		var list = mods.in.data || null;
-		var priority = mods.pri.data || null;
-		var tag = mods.tag.text || null;
+		var task = ".*"+args.object.text.replace(/^\s+|\s+$/g,"")+".*";
+		var list = args.source.data || null;
+		var priority = args.modifier.data || null;
+		var tag = args.instrument.text || null;
 
 		var subTasks = RTM.tasks.findMatchingTasks(task, list, priority, tag);
 		
@@ -1744,8 +1716,25 @@ CmdUtils.CreateCommand({
         	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
     	}
     	
-        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
-
+        pblock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
+    },
+    execute: function(args) {
+    	
+        if (!RTM.check_token()) {
+            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+            RTM.login();
+            return;
+        }
+        
+        if (!RTM.tasks.get_tasks(false)) {
+        	displayMessage('Syncing with RTM.');
+        	RTM.lists.update();        
+			RTM.tasks.force_update_all();
+        	displayMessage('Sync with RTM complete.');
+        	return;
+        }
+        
+        Utils.openUrlInBrowser(RTM.constants.url.ROOT_URL, null);
     }
 });
 
