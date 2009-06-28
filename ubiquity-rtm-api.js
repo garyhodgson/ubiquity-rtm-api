@@ -101,6 +101,7 @@ RTM.constants = {
 		API_URL: "http://api.rememberthemilk.com/services/rest/",
 		AUTH_URL: "http://api.rememberthemilk.com/services/auth/",
 		ROOT_URL: "http://www.rememberthemilk.com/",
+		ICON_URL: "http://www.rememberthemilk.com/favicon.ico",
 	},
 	msg: {
 		LOGIN_MSG: "No Authorisation Token found. Press Enter to Login.",
@@ -121,6 +122,7 @@ RTM.constants = {
 		PROBLEM_POSTPONING_TASK: "A problem occurred postponing the task.",
 		PROBLEM_COMPLETING_TASK: "A problem occurred completing the task.",
 		TASK_ADDED_INBOX: "Cannot add to a smart list. Task added to Inbox.",
+		NO_TASKS_FOUND: "No tasks found. Press enter to force a sync with RTM.",
 	},
 	TEN_MINUTES: 600000,
 	TWENTY_FOUR_HOURS: 86400000,
@@ -280,8 +282,9 @@ RTM.check_token = function() {
 
 RTM.isParser2 = function(){
 	var prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService);
-	var branch = prefs.getBranch("extensions.ubiquity.");
-	return (branch.prefHasUserValue("parserVersion")) ? branch.getIntPref("parserVersion") == 2 : false;
+	var branch = prefs.getBranch("extensions.ubiquity.");	
+	
+	return (branch.getPrefType("parserVersion") != 0) ? branch.getIntPref("parserVersion") == 2 : false;
 }
 
 /*
@@ -314,7 +317,6 @@ RTM.create_rtm_parameter_string = function(apiParams) {
 }
 
 RTM.rtm_call_json_async = function(apiParams, successCallback){
-
 	apiParams.format = 'json';
 	jQuery.ajax({
 		type: "POST",
@@ -322,13 +324,16 @@ RTM.rtm_call_json_async = function(apiParams, successCallback){
 		async: true,
 		data: RTM.create_rtm_parameter_object(apiParams, true),
 		dataType: "json",
-		success: function(j){
+		success: function(j){			
 				if (j.rsp.stat == 'fail') {
-					displayMessage('Error: ' + j.rsp.err.msg);
+					CmdUtils.log('Error: ' + j.rsp.err.msg);
 				} else {
 					successCallback(j.rsp);
 				}
-			}
+			},
+		error: function(XMLHttpRequest, textStatus, errorThrown){
+			CmdUtils.log('RTM Service Call Failure: ' + textStatus);
+		}
 		});
 	}
 	
@@ -342,21 +347,20 @@ RTM.rtm_call_json_sync = function(apiParams, successCallback){
 		data: RTM.create_rtm_parameter_object(apiParams, true),
 		dataType: "json",
 	})
-
-	if (r.responseText.indexOf("<title>Remember The Milk - Temporarily Unavailable</title>") != -1){
-		displayMessage('RTM Service is Temporarily Unavailable');
+	if (r.status != 200){
+		CmdUtils.log('RTM Response: ' + r.status + ' : ' + r.statusText);
+		displayMessage({icon: RTM.constants.url.ICON_URL, text: 'RTM Service is Temporarily Unavailable'});
 		return;
 	}
 	var j = Utils.decodeJson(r.responseText);
 	if (j.rsp.stat == 'fail') {
-		displayMessage('Error: ' + j.rsp.err.msg);
+		CmdUtils.log('Error: ' + j.rsp.err.msg);
 	} else {
 		return successCallback(j.rsp);
 	}
 }
 
 RTM.rtm_call_xml_sync = function(apiParams, successCallback){
-
 
 	var r = jQuery.ajax({
 		type: "POST",
@@ -367,7 +371,7 @@ RTM.rtm_call_xml_sync = function(apiParams, successCallback){
 	});
 	var j = jQuery(r.responseXML);
 	if (j.find("rsp").attr("stat") == 'fail') {
-		displayMessage('Error: ' + j.find("rsp").attr("msg"));
+		CmdUtils.log('Error: ' + j.find("rsp").attr("msg"));
 	} else {
 		return successCallback(j);
 	}
@@ -474,7 +478,7 @@ RTM.get_new_auth_token = function(frob) {
         method: 'rtm.auth.getToken'
     };
 	return RTM.rtm_call_json_sync(apiParams, function(r){
-		displayMessage('Authorisation Token found for: ' + r.auth.user.fullname);
+		displayMessage({icon: RTM.constants.url.ICON_URL, title: "RTM Ubiquity", text: 'Authorisation Token found for: ' + r.auth.user.fullname});
        	RTM.prefs.set(RTM.constants.pref.AUTH_TOKEN, r.auth.token);
        	RTM.prefs.set(RTM.constants.pref.USER_NAME, r.auth.user.username);
        	RTM.prefs.set(RTM.constants.pref.USER_ID, r.auth.user.id);    
@@ -784,7 +788,7 @@ RTM.tasks = function(){
 			){
 			return Application.storage.get(RTM.constants.store.TASKS, null);
 		} else {
-			return _update(true, false);
+			return _update(true, false, true);
 		}
 	}
 
@@ -815,8 +819,6 @@ RTM.tasks = function(){
 		// See http://github.com/garyhodgson/ubiquity-rtm-api/issues/#issue/3
 
 		var taskInstance = (taskseries.task.length) ? taskseries.task[1] : taskseries.task;
-		CmdUtils.log("taskInstance");
-		CmdUtils.log(taskInstance);
 		taskseries.task = taskInstance;
 		
 		taskseries.name = RTM.utils.escape(taskseries.name);
@@ -837,21 +839,23 @@ RTM.tasks = function(){
 	function _mark_smart_tasks(tasks, force){
 		var smartLists = RTM.lists.get_smart_list_names(RTM.constants.store.SMART_LIST);
 		if (!smartLists) return;
-
+		
 		//Note to self: we have to call each smartlist individually because getting all smart list tasks in one go returns a dataset without the smartlist id, so one cannot identify the corresponding smart list when looping through the resultset.
 		for (var smartListId in smartLists){		 	
+
 			var apiParams = {
 		        method: "rtm.tasks.getList",
 		        filter: "status:incomplete AND list:\""+smartLists[smartListId]+"\"",
 	    	}
-	    	
+						    	
 	    	if (!force){
 	    		apiParams.last_sync = _lastUpdated;
-	    	}	
+	    	}	   		
 	    	
-			RTM.rtm_call_xml_sync(apiParams,  function(j) {
+	    	RTM.rtm_call_xml_sync(apiParams,  function(j) {
+	
 					j.find('taskseries').each(function(){
-							var id = jQuery(this).attr("id");
+							var id = jQuery(this).attr('id');
 							if (tasks[id]){
 								if (!tasks[id].smart_lists){
 									tasks[id].smart_lists = [];
@@ -868,7 +872,6 @@ RTM.tasks = function(){
 	}
 	
 	function _update(force, async, markSmartLists) {	
-		
 	    if (!RTM.check_token()) {
 	        return null;
 	    }
@@ -883,9 +886,13 @@ RTM.tasks = function(){
     	}
    	
 		var successCallback = function(j){
-			var tasks = (force) ? new Object() : Application.storage.get(RTM.constants.store.TASKS, new Object());
-			var t = j.tasks;
 			
+			var tasks = new Object();
+			if (!force && (Application.storage.get(RTM.constants.store.TASKS, null) != null)){
+				tasks= Application.storage.get(RTM.constants.store.TASKS, new Object());
+			}
+			
+			var t = j.tasks;			
 
 			for (var i in t.list){
 				var list = t.list[i];				
@@ -894,15 +901,15 @@ RTM.tasks = function(){
 					tasks = _add_new_tasks_and_remove_completed_tasks(tasks, list);	
 					tasks = _remove_deleted_tasks(tasks,list.deleted);
 				}
-			}
+			}			
 
 			if (markSmartLists){
 				tasks = _mark_smart_tasks(tasks, force);
 			}
 			
-			if (!Application.storage.has(RTM.constants.store.TASKS)) { 
+			if (Application.storage.get(RTM.constants.store.TASKS, null) == null) { 
 				// show message on very first run
-				displayMessage("Retrieved tasks from RTM.");
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: "RTM Ubiquity", text: "Retrieved tasks from RTM."});
 			}
 			
 			Application.storage.set(RTM.constants.store.LAST_TASKS_UPDATE, RTM.get_time());
@@ -913,6 +920,7 @@ RTM.tasks = function(){
 			
 			_update_task_names();
 			_update_tag_list();
+			
 			return _tasks;
 		};
 		
@@ -1122,8 +1130,7 @@ RTM.tasks = function(){
 
 
 if (RTM.isParser2())
-{
-		
+{		
 	/**
 	 * Parser 2 Commands
 	 *
@@ -1137,8 +1144,9 @@ if (RTM.isParser2())
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Force a refresh of all tasks and tasklists from RTM.",
+	    msg_title: "RTM Ubiquity: Refresh",
 	    preview: function(pBlock, args) {
 	        if (!RTM.check_token()) {
 	            pBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
@@ -1154,7 +1162,7 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 				RTM.login();
 	            return;
 	        }
@@ -1162,7 +1170,7 @@ if (RTM.isParser2())
 			RTM.lists.update();
 			RTM.tasks.force_update_all();
 	
-	        displayMessage("Refresh Complete!");        
+	        displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: "Refresh Complete!"});        
 		}
 	});	
 	
@@ -1174,8 +1182,9 @@ if (RTM.isParser2())
 	        email: "contact@garyhodgson.com",
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "RTM Logout.  Removes all traces of the ubiquity command.",
+	    msg_title: "RTM Ubiquity: Logout",
 	    preview: function(pBlock, args) {
 	
 	    	var p = "RTM Ubiquity Status.<br><br>";
@@ -1194,7 +1203,7 @@ if (RTM.isParser2())
 	    	RTM.tasks.clear();
 	    	RTM.lists.clear();
 	    
-	        displayMessage('Data Cleared!');
+	        displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Data Cleared!'});
 	    }
 	});	
 	
@@ -1206,8 +1215,9 @@ if (RTM.isParser2())
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "RTM Login. Directs the user to RTM for an authorisation token.",
+	    msg_title: "RTM Ubiquity: Login",
 	    preview: function(pBlock, args) {
 
 	        if (RTM.check_token()) {
@@ -1218,9 +1228,9 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) {
 	        if (RTM.check_token()) {
-	            displayMessage('Valid Token found. Please logout first.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Valid Token found. Please logout first.'});
 	        } else {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 				RTM.login();
 	        }
 	    }
@@ -1234,7 +1244,7 @@ if (RTM.isParser2())
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Add a task to RTM.",
 	    arguments: [
 			{role: 'object', label: 'Task', nountype: noun_arb_text},
@@ -1243,6 +1253,7 @@ if (RTM.isParser2())
 			{role: 'instrument', label: 'Url', nountype: noun_arb_text},
 			{role: 'format', label: 'Tags', nountype: noun_arb_text},
 		],
+		msg_title: "RTM Ubiquity: Add Task",
 	    preview: function(pBlock, args) {    	
 			pBlock.innerHTML = this.description;
 	        if (!RTM.check_token()) {
@@ -1290,12 +1301,12 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) {	
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 				RTM.login();
 	            return;
 	        }
 	        if (!args.object.text){
-	        	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_NAME_REQUIRED});
 	            return;
 	        }
 	        var successMessage = RTM.constants.msg.TASK_ADDED;
@@ -1315,10 +1326,10 @@ if (RTM.isParser2())
 			}
 			
 			if (RTM.add_task(taskName, listId, url, priority, tags)){
-				displayMessage(successMessage);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: successMessage});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_ADDING_TASK});
 			}
 		}
 	});
@@ -1331,13 +1342,14 @@ if (RTM.isParser2())
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Adds a note to a task in RTM.",
 	    arguments: [
 			{role: 'object', label: 'Note', nountype: noun_arb_text},
 			{role: 'instrument', label: 'Title', nountype: noun_arb_text},
 			{role: 'goal', nountype: new RtmNounType("Task", RTM.tasks.get_task_names)},
 		],
+		msg_title: "RTM Ubiquity: Note Task",
 	    preview: function(pBlock, args) {
 			pBlock.innerHTML = this.description;
 	        if (!RTM.check_token()) {
@@ -1383,12 +1395,12 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 				RTM.login();
 	            return;
 	        }
 	        if (!args.object.text){
-	        	displayMessage(RTM.constants.msg.NOTE_TEXT_REQUIRED);
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.NOTE_TEXT_REQUIRED});
 	            return;
 	        }
 	        
@@ -1398,15 +1410,15 @@ if (RTM.isParser2())
 	        var title = args.instrument.text || null;
 	        
 	        if (!taskSeries){
-	        	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_NAME_REQUIRED});
 	            return;
 	        }
 	
 			if (RTM.add_task_note(taskSeries.task.id, taskSeries.id, taskSeries.list_id, note, title)){
-				displayMessage(RTM.constants.msg.TASK_NOTE_ADDED);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_NOTE_ADDED});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK_NOTE);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_ADDING_TASK_NOTE});
 			}
 		}
 	});
@@ -1419,12 +1431,13 @@ if (RTM.isParser2())
 			email: "contact@garyhodgson.com"    
 		},
 		license: "MPL",
-		icon: "http://www.rememberthemilk.com/favicon.ico",
+		icon: RTM.constants.url.ICON_URL,
 		description: "Prioritises a task in RTM.",
 		arguments: [
 			{role: 'object', label: 'Task Names', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)},
 			{role: 'goal', nountype: new RtmNounType( "Priority", {"1":"1","2":"2","3":"3","N":"None"} )},
 		],
+		msg_title: "RTM Ubiquity: Prioritise Task",
 	    preview: function(pBlock, args) {
 	    	
 	    	pBlock.innerHTML = this.description;
@@ -1455,28 +1468,28 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) { 
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }
 	        if (!args.object.text) {
-	            displayMessage('No task given to prioritise.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to prioritise.'});
 	            return;
 	        }
 	        if (!args.goal.text){
-	        	displayMessage('No priority given.');
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No priority given.'});
 	            return;
 	        }
 	        var taskSeries = RTM.tasks.get_task(args.object.data);
 	        if (!taskSeries) {
-	            displayMessage('Unable to find that task in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 	            return;
 	        }
 	
 			if (RTM.prioritise_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, args.goal.text)){
-				displayMessage('Task priority set to ' + args.goal.text);	
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Task priority set to ' + args.goal.text});	
 			} else {
-				displayMessage(PROBLEM_PRIORITISING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: PROBLEM_PRIORITISING_TASK});
 			}
 			RTM.tasks.async_update_all();
 	    }
@@ -1490,12 +1503,13 @@ if (RTM.isParser2())
 			email: "contact@garyhodgson.com"    
 		},
 		license: "MPL",
-		icon: "http://www.rememberthemilk.com/favicon.ico",
+		icon: RTM.constants.url.ICON_URL,
 		description: "Moves a task between task lists in RTM.",
 		arguments: [
 			{role: 'object', label: 'Task', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)},
 			{role: 'goal', nountype: new RtmNounType("Task List", RTM.lists.get_regular_list_names)},
 		],
+		msg_title: "RTM Ubiquity: Move Task",
 	    preview: function(pBlock, args) {
 	
 	    	pBlock.innerHTML = this.description;
@@ -1535,29 +1549,29 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }
 	        if (!args.object.text) {
-	            displayMessage('No task given to move.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to move.'});
 	            return;
 	        }
 	        if (!args.goal.text){
-	        	displayMessage('No target task list given.');
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No target task list given.'});
 	            return;
 	        }
 	        var taskSeries = RTM.tasks.get_task(args.object.data);
 	        if (!taskSeries) {
-	            displayMessage('Unable to find that task in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 	            return;
 	        }
 	
 			if (RTM.move_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, args.goal.data)){
-				displayMessage(RTM.constants.msg.TASK_MOVED);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_MOVED});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_MOVING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_MOVING_TASK});
 			}	
 	    }
 	});
@@ -1571,9 +1585,10 @@ if (RTM.isParser2())
 			email: "contact@garyhodgson.com"    
 		},
 		license: "MPL",
-		icon: "http://www.rememberthemilk.com/favicon.ico",
+		icon: RTM.constants.url.ICON_URL,
 		description: "Postpones a task in RTM.",
 		arguments: [{role: 'object', label: 'Task Names', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)}],
+		msg_title: "RTM Ubiquity: Postpone Task",
 	    preview: function(pBlock, args) {
 	    	pBlock.innerHTML = this.description;
 	        if (!RTM.check_token()) {
@@ -1599,25 +1614,25 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }    
 	        if (!args.object.text) {
-	            displayMessage('No task given to postpone.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to postpone.'});
 	            return;
 	        }
 	        var taskSeries = RTM.tasks.get_task(args.object.data);
 	        if (!taskSeries) {
-	            displayMessage('Unable to find that task in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 	            return;
 	        }
 			
 	        if (RTM.postpone_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
-				displayMessage(RTM.constants.msg.TASK_POSTPONED);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_POSTPONED});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_POSTPONING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_POSTPONING_TASK});
 			}
 	    }
 	});
@@ -1630,9 +1645,10 @@ if (RTM.isParser2())
 	        name: "Gary Hodgson",
 	        email: "contact@garyhodgson.com"    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Complete task in RTM.",
 		arguments: [{role: 'object', label: 'Task Names', nountype: new RtmNounType("Task Names", RTM.tasks.get_task_names)}],
+		msg_title: "RTM Ubiquity: Complete Task",
 	    preview: function(pBlock, args) {
 	    	
 	        if (!RTM.check_token()) {
@@ -1660,30 +1676,30 @@ if (RTM.isParser2())
 	    },
 	    execute: function(args) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }        
 	        if (!args.object.text) {
-	            displayMessage('No task given to complete.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to complete.'});
 	            return;
 	        }
 	        var tasks = Application.storage.get(RTM.constants.store.TASKS, null);
 	        if (!tasks) {
-	            displayMessage('Unable to find any tasks in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find any tasks in your Task Lists.'});
 	            return;
 	        }
 	        var taskSeries = tasks[args.object.data];
 	        if (!taskSeries) {
-	            displayMessage('Unable to find that task in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 	            return;
 	        }
 	
 	        if (RTM.complete_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
-				displayMessage(RTM.constants.msg.TASK_COMPLETED);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_COMPLETED});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_COMPLETING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_COMPLETING_TASK});
 			}
 	    }
 	});
@@ -1696,7 +1712,7 @@ if (RTM.isParser2())
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "View a list of RTM Tasks.",
 	    arguments: [ 	
 	    	{role: 'object', label: 'task', nountype: noun_arb_text},
@@ -1704,6 +1720,7 @@ if (RTM.isParser2())
 	  		{role: 'modifier', nountype: new RtmNounType("Priority", {"1":"1","2":"2","3":"3","N":"None"})}, 
 	        {role: 'instrument', nountype: new RtmNounType("Tag", RTM.tasks.get_tag_array)}
 	    ],
+	    msg_title: "RTM Ubiquity: View Tasks",
 	    preview: function(pblock, args) {
 	        pblock.innerHTML = this.description;        
 	        
@@ -1713,7 +1730,7 @@ if (RTM.isParser2())
 	        }
 	        var tasks = RTM.tasks.get_tasks(false);
 	        if (!tasks) {
-	        	pblock.innerHTML = 'No tasks found. Press enter to force a sync with RTM.';
+	        	pblock.innerHTML = RTM.constants.msg.NO_TASKS_FOUND;
 	            return;
 	        }
 	
@@ -1744,16 +1761,16 @@ if (RTM.isParser2())
 	    execute: function(args) {
 	    	
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }
 	        
 	        if (!RTM.tasks.get_tasks(false)) {
-	        	displayMessage('Syncing with RTM.');
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Syncing with RTM.'});
 	        	RTM.lists.update();        
 				RTM.tasks.force_update_all();
-	        	displayMessage('Sync with RTM complete.');
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Sync with RTM complete.'});
 	        	return;
 	        }
 	        
@@ -1764,6 +1781,7 @@ if (RTM.isParser2())
 } 
 else // Parser 1 commands
 {
+		
 	CmdUtils.CreateCommand({
 	    name: "rtm-refresh",  
 	    homepage: "http://www.garyhodgson.com/ubiquity",
@@ -1772,20 +1790,9 @@ else // Parser 1 commands
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Force a refresh of all tasks and tasklists from RTM.",
-	    execute: function(directObject, mods) {
-	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
-				RTM.login();
-	            return;
-	        }
-	
-			RTM.lists.update();
-			RTM.tasks.force_update_all();
-	
-	        displayMessage("Refresh Complete!");        
-	       },
+	    msg_title: "RTM Ubiquity: Refresh",
 	    preview: function(previewBlock, directObject, mods) {
 	        if (!RTM.check_token()) {
 	            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
@@ -1798,10 +1805,20 @@ else // Parser 1 commands
 	        p += "<br><br>";
 	        p += RTM.template.STATUS;
 	        previewBlock.innerHTML = CmdUtils.renderTemplate(p, RTM.status_data());
-	    }
+	    },
+	    execute: function(directObject, mods) {
+	        if (!RTM.check_token()) {
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
+				RTM.login();
+	            return;
+	        }
+	
+			RTM.lists.update();
+			RTM.tasks.force_update_all();
+	
+	        displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: "Refresh Complete!"});        
+	       }
 	});
-	
-	
 	
 	CmdUtils.CreateCommand({
 	    name: "rtm-logout",
@@ -1811,8 +1828,9 @@ else // Parser 1 commands
 	        email: "contact@garyhodgson.com",
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "RTM Logout.  Removes all traces of the ubiquity command.",
+	    msg_title: "RTM Ubiquity: Logout",
 	    preview: function(previewBlock, directObject, mods) {
 	    	
 	    	var p = "RTM Ubiquity Status.<br><br>";
@@ -1827,12 +1845,11 @@ else // Parser 1 commands
 	    	for (var c in RTM.constants.store){
 		    	Application.storage.set(RTM.constants.store[c], null);
 	    	}
-	    	CmdUtils.log(Application.storage.has(RTM.constants.store.TASKS));
 
 	    	RTM.tasks.clear();
 	    	RTM.lists.clear();
 	    
-	        displayMessage('Data Cleared!');
+	        displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Data Cleared!'});
 	    }
 	});
 	
@@ -1845,8 +1862,9 @@ else // Parser 1 commands
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "RTM Login. Directs the user to RTM for an authorisation token.",
+	    msg_title: "RTM Ubiquity: Login",
 	    preview: function(previewBlock, directObject, mods) {
 	        if (RTM.check_token()) {
 	            previewBlock.innerHTML = 'Authorisation token found. You\'re good to go!';
@@ -1856,9 +1874,9 @@ else // Parser 1 commands
 	    },
 	    execute: function(directObject, mods) {
 	        if (RTM.check_token()) {
-	            displayMessage('Valid Token found. Please logout first.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Valid Token found. Please logout first.'});
 	        } else {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 				RTM.login();
 	        }
 	    }
@@ -1872,7 +1890,7 @@ else // Parser 1 commands
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Add a task to RTM.",
 	    takes: {
 	        task: noun_arb_text
@@ -1883,6 +1901,7 @@ else // Parser 1 commands
 	        url: noun_arb_text,
 	        tags: noun_arb_text,
 	    },
+	    msg_title: "RTM Ubiquity: Add Task",
 	    preview: function(previewBlock, directObject, mods) {
 			previewBlock.innerHTML = this.description;
 	        if (!RTM.check_token()) {
@@ -1930,12 +1949,12 @@ else // Parser 1 commands
 	    },
 	    execute: function(directObject, mods) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 				RTM.login();
 	            return;
 	        }
 	        if (!directObject.text){
-	        	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_NAME_REQUIRED});
 	            return;
 	        }
 	        var successMessage = RTM.constants.msg.TASK_ADDED;
@@ -1955,10 +1974,10 @@ else // Parser 1 commands
 			}
 			
 			if (RTM.add_task(taskName, listId, url, priority, tags)){
-				displayMessage(successMessage);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: successMessage});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_ADDING_TASK});
 			}
 		}
 	});
@@ -1971,7 +1990,7 @@ else // Parser 1 commands
 	        email: "contact@garyhodgson.com"
 	    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Adds a note to a task in RTM.",
 	    takes: {
 	        note: noun_arb_text
@@ -1980,6 +1999,7 @@ else // Parser 1 commands
 			title: noun_arb_text,
 			to: new RtmNounType("Task", RTM.tasks.get_task_names),
 	    },
+	    msg_title: "RTM Ubiquity: Note Task",
 	    preview: function(previewBlock, directObject, mods) {
 			previewBlock.innerHTML = this.description;
 	        if (!RTM.check_token()) {
@@ -2025,12 +2045,12 @@ else // Parser 1 commands
 	    },
 	    execute: function(directObject, mods) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 				RTM.login();
 	            return;
 	        }
 	        if (!directObject.text){
-	        	displayMessage(RTM.constants.msg.NOTE_TEXT_REQUIRED);
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.NOTE_TEXT_REQUIRED});
 	            return;
 	        }
 	        
@@ -2040,15 +2060,15 @@ else // Parser 1 commands
 	        var title = mods.title.text || null;
 	        
 	        if (!taskSeries){
-	        	displayMessage(RTM.constants.msg.TASK_NAME_REQUIRED);
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_NAME_REQUIRED});
 	            return;
 	        }
 	
 			if (RTM.add_task_note(taskSeries.task.id, taskSeries.id, taskSeries.list_id, note, title)){
-				displayMessage(RTM.constants.msg.TASK_NOTE_ADDED);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_NOTE_ADDED});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_ADDING_TASK_NOTE);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_ADDING_TASK_NOTE});
 			}
 		}
 	});
@@ -2061,7 +2081,7 @@ else // Parser 1 commands
 			email: "contact@garyhodgson.com"    
 		},
 		license: "MPL",
-		icon: "http://www.rememberthemilk.com/favicon.ico",
+		icon: RTM.constants.url.ICON_URL,
 		description: "Prioritises a task in RTM.",
 		takes: {
 			task: new RtmNounType("Task Names",   RTM.tasks.get_task_names),
@@ -2069,6 +2089,7 @@ else // Parser 1 commands
 		modifiers: {
 			to: new RtmNounType( "Priority", {"1":"1","2":"2","3":"3","N":"None"} )
 		},
+		msg_title: "RTM Ubiquity: Prioritise Task",
 	    preview: function(previewBlock, directObject, mods) {
 	    	
 	    	previewBlock.innerHTML = this.description;
@@ -2098,28 +2119,28 @@ else // Parser 1 commands
 	    },
 	    execute: function(directObject, mods) { 
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }
 	        if (!directObject.text) {
-	            displayMessage('No task given to prioritise.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to prioritise.'});
 	            return;
 	        }
 	        if (!mods.to.text){
-	        	displayMessage('No priority given.');
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No priority given.'});
 	            return;
 	        }
 	        var taskSeries = RTM.tasks.get_task(directObject.data);
 	        if (!taskSeries) {
-	            displayMessage('Unable to find that task in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 	            return;
 	        }
 	
 			if (RTM.prioritise_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, mods.to.text)){
-				displayMessage('Task priority set to ' + mods.to.text);	
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Task priority set to ' + mods.to.text});	
 			} else {
-				displayMessage(PROBLEM_PRIORITISING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: PROBLEM_PRIORITISING_TASK});
 			}
 			RTM.tasks.async_update_all();
 	    }
@@ -2133,7 +2154,7 @@ else // Parser 1 commands
 			email: "contact@garyhodgson.com"    
 		},
 		license: "MPL",
-		icon: "http://www.rememberthemilk.com/favicon.ico",
+		icon: RTM.constants.url.ICON_URL,
 		description: "Moves a task between task lists in RTM.",
 		takes: {
 			task: new RtmNounType("Task Names",   RTM.tasks.get_task_names),
@@ -2141,6 +2162,7 @@ else // Parser 1 commands
 		modifiers: {
 			to: new RtmNounType("Task List", RTM.lists.get_regular_list_names)
 		},
+		msg_title: "RTM Ubiquity: Move Task",
 	    preview: function(previewBlock, directObject, mods) {
 	
 	    	previewBlock.innerHTML = this.description;
@@ -2180,29 +2202,29 @@ else // Parser 1 commands
 	    },
 	    execute: function(directObject, mods) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }
 	        if (!directObject.text) {
-	            displayMessage('No task given to move.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to move.'});
 	            return;
 	        }
 	        if (!mods.to.text){
-	        	displayMessage('No target task list given.');
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No target task list given.'});
 	            return;
 	        }
 	        var taskSeries = RTM.tasks.get_task(directObject.data);
 	        if (!taskSeries) {
-	            displayMessage('Unable to find that task in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 	            return;
 	        }
 	
 			if (RTM.move_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id, mods.to.data)){
-				displayMessage(RTM.constants.msg.TASK_MOVED);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_MOVED});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_MOVING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_MOVING_TASK});
 			}	
 	    }
 	});
@@ -2216,11 +2238,12 @@ else // Parser 1 commands
 			email: "contact@garyhodgson.com"    
 		},
 		license: "MPL",
-		icon: "http://www.rememberthemilk.com/favicon.ico",
+		icon: RTM.constants.url.ICON_URL,
 		description: "Postpones a task in RTM.",
 		takes: {
 			task: new RtmNounType("Task Names",   RTM.tasks.get_task_names),
-		},    
+		},
+		msg_title: "RTM Ubiquity: Postpone Task",
 	    preview: function(previewBlock, directObject) {
 	    	previewBlock.innerHTML = this.description;
 	        if (!RTM.check_token()) {
@@ -2230,6 +2253,7 @@ else // Parser 1 commands
 	        if (!directObject.text) {
 	            return;
 	        }
+	        
 	        var task = RTM.tasks.get_task(directObject.data) || null;
 			if (!task) {
 				previewBlock.innerHTML = "Unable to find task in task lists.";
@@ -2246,25 +2270,25 @@ else // Parser 1 commands
 	    },
 	    execute: function(directObject, mods) {
 	        if (!RTM.check_token()) {
-	            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
 	            return;
 	        }    
 	        if (!directObject.text) {
-	            displayMessage('No task given to postpone.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to postpone.'});
 	            return;
 	        }
 	        var taskSeries = RTM.tasks.get_task(directObject.data);
 	        if (!taskSeries) {
-	            displayMessage('Unable to find that task in your Task Lists.');
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 	            return;
 	        }
 			
 	        if (RTM.postpone_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
-				displayMessage(RTM.constants.msg.TASK_POSTPONED);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_POSTPONED});
 				RTM.tasks.async_update_all();
 			} else {
-				displayMessage(RTM.constants.msg.PROBLEM_POSTPONING_TASK);
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_POSTPONING_TASK});
 			}
 	    }
 	});
@@ -2277,11 +2301,12 @@ else // Parser 1 commands
 	        name: "Gary Hodgson",
 	        email: "contact@garyhodgson.com"    },
 	    license: "MPL",
-	    icon: "http://www.rememberthemilk.com/favicon.ico",
+	    icon: RTM.constants.url.ICON_URL,
 	    description: "Complete task in RTM.",
 	    takes: {
 	        task: new RtmNounType("Task Names", RTM.tasks.get_task_names),
 	    },    
+	    msg_title: "RTM Ubiquity: Complete Task",
 	    preview: function(previewBlock, directObject) {
 	        if (!RTM.check_token()) {
 	            previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
@@ -2308,113 +2333,112 @@ else // Parser 1 commands
 	    },
 	    execute: function(directObject, mods) {
 	
-        if (!RTM.check_token()) {
-            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
-            RTM.login();
-            return;
-        }        
-        if (!directObject.text) {
-            displayMessage('No task given to complete.');
+	        if (!RTM.check_token()) {
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
+	            RTM.login();
+	            return;
+	        }        
+	        if (!directObject.text) {
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'No task given to complete.'});
 		            return;
 		        }
 		        var tasks = Application.storage.get(RTM.constants.store.TASKS, null);
 		        if (!tasks) {
-		            displayMessage('Unable to find any tasks in your Task Lists.');
+		            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find any tasks in your Task Lists.'});
 		            return;
 		        }
 		        var taskSeries = tasks[directObject.data];
 		        if (!taskSeries) {
-		            displayMessage('Unable to find that task in your Task Lists.');
+		            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Unable to find that task in your Task Lists.'});
 		            return;
 		        }
 		
 		        if (RTM.complete_task(taskSeries.task.id, taskSeries.id, taskSeries.list_id)){
-					displayMessage(RTM.constants.msg.TASK_COMPLETED);
-		CmdUtils.log("calling async_update_all");		
-		
+					displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.TASK_COMPLETED});		
 					RTM.tasks.async_update_all();
 				} else {
-					displayMessage(RTM.constants.msg.PROBLEM_COMPLETING_TASK);
+					displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.PROBLEM_COMPLETING_TASK});
 				}
 		    }
 		});
 		
 		
-		CmdUtils.CreateCommand({
-		    name: "rtm-view-tasks",
-		    homepage: "http://www.garyhodgson.com/ubiquity",
-		    author: {
-		        name: "Gary Hodgson",
-		        email: "contact@garyhodgson.com"
-		    },
-		    license: "MPL",
-		    icon: "http://www.rememberthemilk.com/favicon.ico",
-		    description: "View a list of RTM Tasks.",
-		    takes: {
-		        task: noun_arb_text
-		    },
-		    modifiers: { 
-		    	in : new RtmNounType("Task List", RTM.lists.get_all_list_names),
-		        pri: new RtmNounType("Priority", {"1":"1","2":"2","3":"3","N":"None"} ),
-		        tag: new RtmNounType("Tag", RTM.tasks.get_tag_array),
-		    },
-		    execute: function(directObject, mods) {
-		    	
-		        if (!RTM.check_token()) {
-		            displayMessage(RTM.constants.msg.LOGGING_IN_MSG);
-		            RTM.login();
-		            return;
-		        }
-		        
-		        if (!RTM.tasks.get_tasks(false)) {
-		        	displayMessage('Syncing with RTM.');
-		        	RTM.lists.update();        
-					RTM.tasks.force_update_all();
-		        	displayMessage('Sync with RTM complete.');
-		        	return;
-		        }
-		        
-		        Utils.openUrlInBrowser(RTM.constants.url.ROOT_URL, null);
-		    },
-		    preview: function(previewBlock, directObject, mods) {
-		        previewBlock.innerHTML = this.description;        
-		        
-		    	if (!RTM.check_token()) {
-		        	previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
-		            return;
-		        }
-		        var tasks = RTM.tasks.get_tasks(false);
-		        if (!tasks) {
-		        	previewBlock.innerHTML = 'No tasks found. Press enter to force a sync with RTM.';
-		            return;
-		        }
-		
-				var task = ".*"+directObject.text.replace(/^\s+|\s+$/g,"")+".*";
-				var list = mods.in.data || null;
-				var priority = mods.pri.data || null;
-				var tag = mods.tag.text || null;
-		
-				var subTasks = RTM.tasks.findMatchingTasks(task, list, priority, tag);
-				
-				subTasks.sort(RTM.utils.sort_tasks_algorithm);
-		 
-				ptemplate = "<div>";
-		        ptemplate += "{for item in items}";
-		        ptemplate += RTM.template.TASK;
-		        ptemplate += "{/for}";
-		        ptemplate += "</div>";
-		                
-		
-		        var previewData = {
-		        	items: subTasks,
-		        	rootUrl: RTM.constants.url.ROOT_URL,
-		        	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
-		    	}
-		    	
-		        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
-		
-		    }
-		});
+	CmdUtils.CreateCommand({
+	    name: "rtm-view-tasks",
+	    homepage: "http://www.garyhodgson.com/ubiquity",
+	    author: {
+	        name: "Gary Hodgson",
+	        email: "contact@garyhodgson.com"
+	    },
+	    license: "MPL",
+	    icon: RTM.constants.url.ICON_URL,
+	    description: "View a list of RTM Tasks.",
+	    takes: {
+	        task: noun_arb_text
+	    },
+	    modifiers: { 
+	    	in : new RtmNounType("Task List", RTM.lists.get_all_list_names),
+	        pri: new RtmNounType("Priority", {"1":"1","2":"2","3":"3","N":"None"} ),
+	        tag: new RtmNounType("Tag", RTM.tasks.get_tag_array),
+	    },
+	    msg_title: "RTM Ubiquity: View Tasks",
+	    execute: function(directObject, mods) {
+	    	
+	        if (!RTM.check_token()) {
+	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
+	            RTM.login();
+	            return;
+	        }
+	        
+	        if (!RTM.tasks.get_tasks(false)) {
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Syncing with RTM.'});
+	        	RTM.lists.update();        
+				RTM.tasks.force_update_all();
+	        	displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: 'Sync with RTM complete.'});
+	        	return;
+	        }
+	        
+	        Utils.openUrlInBrowser(RTM.constants.url.ROOT_URL, null);
+	    },
+	    preview: function(previewBlock, directObject, mods) {
+	        previewBlock.innerHTML = this.description;        
+	        
+	    	if (!RTM.check_token()) {
+	        	previewBlock.innerHTML = RTM.constants.msg.LOGIN_MSG;
+	            return;
+	        }
+	        var tasks = RTM.tasks.get_tasks(false);
+	        if (!tasks) {
+	        	previewBlock.innerHTML = RTM.constants.msg.NO_TASKS_FOUND;
+	            return;
+	        }
+	
+			var task = ".*"+directObject.text.replace(/^\s+|\s+$/g,"")+".*";
+			var list = mods.in.data || null;
+			var priority = mods.pri.data || null;
+			var tag = mods.tag.text || null;
+	
+			var subTasks = RTM.tasks.findMatchingTasks(task, list, priority, tag);
+			
+			subTasks.sort(RTM.utils.sort_tasks_algorithm);
+	 
+			ptemplate = "<div>";
+	        ptemplate += "{for item in items}";
+	        ptemplate += RTM.template.TASK;
+	        ptemplate += "{/for}";
+	        ptemplate += "</div>";
+	                
+	
+	        var previewData = {
+	        	items: subTasks,
+	        	rootUrl: RTM.constants.url.ROOT_URL,
+	        	userId: RTM.prefs.get(RTM.constants.pref.USER_NAME, ''),
+	    	}
+	    	
+	        previewBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
+	
+	    }
+	});
 }
 
 
