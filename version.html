@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+		<link rel="stylesheet" href="css/rtm.css" type="text/css" media="screen" title="no title" charset="utf-8" />
+		<script type="text/javascript" charset="utf-8">
+			var params = {};
+			
+			var versions = new Array();
+			versions["0.3.8"]="d546304f7a645bc82156e98082b245ac5bf53417";
+			versions["0.3.7"]="7d2a328e52ca51378a08ee1d54ea17f5ec2f1fb5";
+			versions["0.3.6"]="205fb55089cf74edf8af2ae62287d423dc0eaa61";
+			versions["0.3.5"]="7589695b4e02267bf341545d024ec0e1067c861d";
+			versions["0.3.4"]="eda9e9e287333c524b3d0d199d60dd725492daf2";
+
+			if (location.search) {
+			    var parts = location.search.substring(1).split('&');
+			
+			    for (var i = 0; i < parts.length; i++) {
+			        var nv = parts[i].split('=');
+			        if (!nv[0]) continue;
+			        params[nv[0]] = nv[1] || true;
+			    }
+			}
+			
+			var version = versions[params.version] || "master";
+			var version_text = (version == "master"? "latest" : params.version);
+			
+			document.write('<link rel=\"commands\" href=\"http://github.com/garyhodgson/ubiquity-rtm-api/raw/' + version + '/ubiquity-rtm-api.js\" name=\"Ubiquity RTM command\" />');
+			document.write('<title>Ubiquity RTM Version: '+version_text+'</title>');
+		</script>
+	</head>
+<body>
+
+<div id="container">
+
+	<div id="title">
+		<table border="0" cellpadding="3" cellspacing="0" class="zeroBorder" width="700">
+			<tbody>
+				<tr>					
+<td style="TEXT-ALIGN:center">
+						<img src="images/rtm/RTM_UBIQUITY_LOGO_1.png" width="160" height="213" alt="Remember The Milk Ubiquity">
+					</td>
+					<td>
+						<span style="FONT-WEIGHT:normal"><b><font size="6">Remember The Milk Ubiquity</font></b></span>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	
+	<p>&nbsp;</p>
+	
+	<div class="toc" id="messages"><h4>Ubiquity RTM: Prior Version</h4>
+		<ul>
+			<li>This is a holding page to offer previous versions of Ubiquity RTM.</li>
+			<script type="text/javascript" charset="utf-8">
+				document.write('<li>Currently offering version: '+version_text+'</li>');
+			</script>
+			<li><a href="index.html#Releases">Release Notes</a></li>
+		</ul>
+
+	</div>
+
+</div>
+	
+	
+</body>
+</html>
