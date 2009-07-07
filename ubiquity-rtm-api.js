@@ -5,7 +5,7 @@
  * source: "http://github.com/garyhodgson/ubiquity-rtm-api", 
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.3.9" 
+ * version: "0.4" 
 */
 
 /**
@@ -130,7 +130,7 @@ RTM.constants = {
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.3.9",
+	VERSION: "0.4",
 }
 
 
@@ -290,7 +290,7 @@ RTM.isParser2 = function(){
 /*
 The function below is used to sign parameters, as required by the RTM API (please have a read of RTM's authentication approach here: http://www.rememberthemilk.com/services/api/authentication.rtm). This uses an API Key (given at the very top of this script) and a Shared Secret to verify requests are from who they say they are (my app in this case) and also to help track usage.
 
-Getting your own API Key is nice and easy (http://www.rememberthemilk.com/services/api/keys.rtm) but people shouldn't have to get one in order to use this command. The command is released under the Mozilla Public License, so everyone is welcome to copy and modify it to their own needs,but I kindly ask that if you make major modifications (e.g. more than renaming the names) then please apply for your own API key.
+Getting your own API Key is nice and easy (http://www.rememberthemilk.com/services/api/keys.rtm) but people shouldn't have to get one in order to use this command. The command is released under the Mozilla Public License, so everyone is welcome to copy and modify it to their own needs,but I kindly ask that if you make major modifications (e.g. more than renaming the commands) then please apply for your own API key.
 
 If you have any queries/concerns then feel free to mail me: contact@garyhodgson.com
 */
