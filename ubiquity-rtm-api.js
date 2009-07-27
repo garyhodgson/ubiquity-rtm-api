@@ -283,7 +283,6 @@ RTM.check_token = function() {
 RTM.isParser2 = function(){
 	var prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService);
 	var branch = prefs.getBranch("extensions.ubiquity.");	
-	
 	return (branch.getPrefType("parserVersion") != 0) ? branch.getIntPref("parserVersion") == 2 : false;
 }
 
@@ -318,6 +317,10 @@ RTM.create_rtm_parameter_string = function(apiParams) {
 
 RTM.rtm_call_json_async = function(apiParams, successCallback){
 	apiParams.format = 'json';
+	
+	CmdUtils.log('rtm_call_json_async. Api method: ' + apiParams.method);
+	CmdUtils.log(apiParams);
+	
 	jQuery.ajax({
 		type: "POST",
 		url: RTM.constants.url.API_URL,
@@ -325,39 +328,41 @@ RTM.rtm_call_json_async = function(apiParams, successCallback){
 		data: RTM.create_rtm_parameter_object(apiParams, true),
 		dataType: "json",
 		success: function(j){			
-				if (j.rsp.stat == 'fail') {
-					CmdUtils.log('Error: ' + j.rsp.err.msg);
-				} else {
-					successCallback(j.rsp);
-				}
-			},
+			if (j.rsp.stat == 'fail') {
+				CmdUtils.log('Error whilst calling ' + apiParams.method + '. Error Message: ' +  j.rsp.err.msg);
+			} else {
+				successCallback(j.rsp);
+			}
+		},
 		error: function(XMLHttpRequest, textStatus, errorThrown){
-			CmdUtils.log('RTM Service Call Failure: ' + textStatus);
+			CmdUtils.log('RTM Service Call Failure whilst calling ' + apiParams.method + '. Error Message: ' + textStatus +'. ' + XMLHttpRequest.statusText);
 		}
 		});
 	}
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
-	
 	apiParams.format = 'json';
-	var r = jQuery.ajax({
+	
+	CmdUtils.log('rtm_call_json_sync. Api method: ' + apiParams.method);
+	CmdUtils.log(apiParams);
+		
+	jQuery.ajax({
 		type: "POST",
 		url: RTM.constants.url.API_URL,
 		async: false,
 		data: RTM.create_rtm_parameter_object(apiParams, true),
 		dataType: "json",
+		success: function(j){			
+			if (j.rsp.stat == 'fail') {
+				CmdUtils.log('Error whilst calling ' + apiParams.method + '. Error Message: ' +  j.rsp.err.msg);
+			} else {
+				successCallback(j.rsp);
+			}
+		},
+		error: function(XMLHttpRequest, textStatus, errorThrown){
+			CmdUtils.log('RTM Service Call Failure whilst calling ' + apiParams.method + '. Error Message: ' + textStatus +'. ' + XMLHttpRequest.statusText);
+		}
 	})
-	if (r.status != 200){
-		CmdUtils.log('RTM Response: ' + r.status + ' : ' + r.statusText);
-		displayMessage({icon: RTM.constants.url.ICON_URL, text: 'RTM Service is Temporarily Unavailable'});
-		return;
-	}
-	var j = Utils.decodeJson(r.responseText);
-	if (j.rsp.stat == 'fail') {
-		CmdUtils.log('Error: ' + j.rsp.err.msg);
-	} else {
-		return successCallback(j.rsp);
-	}
 }
 
 RTM.rtm_call_xml_sync = function(apiParams, successCallback){
@@ -854,10 +859,10 @@ CmdUtils.log('_mark_smart_tasks start');
                 apiParams.last_sync = _lastUpdated;
             }       
 
-CmdUtils.log('apiParams');
+CmdUtils.log('apiParams' );
 CmdUtils.log(apiParams);
 
-            RTM.rtm_call_json_async(apiParams, 
+            RTM.rtm_call_json_sync(apiParams, 
                 function(j) {
                     CmdUtils.log(j);
                     if (j.tasks.list){
@@ -925,7 +930,7 @@ CmdUtils.log('_mark_smart_tasks end');
 				// show message on very first run
 				displayMessage({icon: RTM.constants.url.ICON_URL, title: "RTM Ubiquity", text: "Retrieved tasks from RTM."});
 			}
-			
+		
 			Application.storage.set(RTM.constants.store.LAST_TASKS_UPDATE, RTM.get_time());
 			_lastUpdated = Application.storage.get(RTM.constants.store.LAST_TASKS_UPDATE, null)
 
