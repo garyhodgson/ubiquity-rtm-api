@@ -361,7 +361,6 @@ RTM.rtm_call_json_sync = function(apiParams, successCallback){
 }
 
 RTM.rtm_call_xml_sync = function(apiParams, successCallback){
-
 	var r = jQuery.ajax({
 		type: "POST",
 		url: RTM.constants.url.API_URL,
@@ -837,39 +836,54 @@ RTM.tasks = function(){
 	}
 	
 	function _mark_smart_tasks(tasks, force){
-		var smartLists = RTM.lists.get_smart_list_names(RTM.constants.store.SMART_LIST);
-		if (!smartLists) return;
 		
-		//Note to self: we have to call each smartlist individually because getting all smart list tasks in one go returns a dataset without the smartlist id, so one cannot identify the corresponding smart list when looping through the resultset.
-		for (var smartListId in smartLists){		 	
+CmdUtils.log('_mark_smart_tasks start');   
 
-			var apiParams = {
-		        method: "rtm.tasks.getList",
-		        filter: "status:incomplete AND list:\""+smartLists[smartListId]+"\"",
-	    	}
-						    	
-	    	if (!force){
-	    		apiParams.last_sync = _lastUpdated;
-	    	}	   		
-	    	
-	    	RTM.rtm_call_xml_sync(apiParams,  function(j) {
-	
-					j.find('taskseries').each(function(){
-							var id = jQuery(this).attr('id');
-							if (tasks[id]){
-								if (!tasks[id].smart_lists){
-									tasks[id].smart_lists = [];
-								}
-								if (!tasks[id].smart_lists.join().match(smartListId)){
-									tasks[id].smart_lists.push(smartListId);
-								}
-							}
-						})
-					});
-		}
-		
-		return tasks;
-	}
+        var smartLists = RTM.lists.get_smart_list_names(RTM.constants.store.SMART_LIST);
+        if (!smartLists) return;
+
+        //Note to self: we have to call each smartlist individually because getting all smart list tasks in one go returns a dataset without the smartlist id, so one cannot identify the corresponding smart list when looping through the resultset.
+        for (var smartListId in smartLists){            
+
+            var apiParams = {
+                method: "rtm.tasks.getList",
+                filter: "status:incomplete AND list:\""+smartLists[smartListId]+"\"",
+            }
+                               
+            if (!force){
+                apiParams.last_sync = _lastUpdated;
+            }       
+
+CmdUtils.log('apiParams');
+CmdUtils.log(apiParams);
+
+            RTM.rtm_call_json_async(apiParams, 
+                function(j) {
+                    CmdUtils.log(j);
+                    if (j.tasks.list){
+	                    jQuery.each(j.tasks.list.taskseries, function(key,value){
+	                        if (key == 'id') {
+	                            var id = value;
+	                            CmdUtils.log(id);
+	                            if (tasks[id]){
+	                                if (!tasks[id].smart_lists){
+	                                    tasks[id].smart_lists = [];
+	                                }
+	                                if (!tasks[id].smart_lists.join().match(smartListId)){
+	                                    tasks[id].smart_lists.push(smartListId);
+	                                }
+	                            }
+	                        }
+	                    }
+                		);
+                	}
+                });
+        }
+
+CmdUtils.log('_mark_smart_tasks end');  
+             
+        return tasks;
+    }
 	
 	function _update(force, async, markSmartLists) {	
 	    if (!RTM.check_token()) {
