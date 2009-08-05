@@ -5,7 +5,7 @@
  * source: "http://github.com/garyhodgson/ubiquity-rtm-api", 
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.4" 
+ * version: "0.4.1" 
 */
 
 /**
@@ -316,11 +316,7 @@ RTM.create_rtm_parameter_string = function(apiParams) {
 }
 
 RTM.rtm_call_json_async = function(apiParams, successCallback){
-	apiParams.format = 'json';
-	
-	CmdUtils.log('rtm_call_json_async. Api method: ' + apiParams.method);
-	CmdUtils.log(apiParams);
-	
+	apiParams.format = 'json';	
 	jQuery.ajax({
 		type: "POST",
 		url: RTM.constants.url.API_URL,
@@ -341,11 +337,7 @@ RTM.rtm_call_json_async = function(apiParams, successCallback){
 	}
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
-	apiParams.format = 'json';
-	
-	CmdUtils.log('rtm_call_json_sync. Api method: ' + apiParams.method);
-	CmdUtils.log(apiParams);
-		
+	apiParams.format = 'json';	
 	jQuery.ajax({
 		type: "POST",
 		url: RTM.constants.url.API_URL,
@@ -840,6 +832,62 @@ RTM.tasks = function(){
 		return taskseries;
 	}
 	
+	function _mark_smart_task_list(smartListId, smartListName, force){
+		
+		var apiParams = {
+			method: "rtm.tasks.getList",
+			filter: "status:incomplete AND list:\""+smartListName+"\"",
+		}
+	
+		if (!force){
+			apiParams.last_sync = _lastUpdated;
+		}       
+		
+		CmdUtils.log('apiParams: ' + apiParams.filter);
+		
+		var callback = function(j) {
+			var processTaskSeries = function(key,value){
+				if (value[key]){
+					var taskseries = value[key];
+					var id =	taskseries.id;		
+CmdUtils.log('id ' + id);		
+					if (_tasks[id]){
+						if (!_tasks[id].smart_lists){
+							_tasks[id].smart_lists = [];
+						} // if
+						if (!_tasks[id].smart_lists.join().match(smartListId)){
+							_tasks[id].smart_lists.push(smartListId);
+						} // if
+					} // if
+				} else {
+					if (key = 'id'){
+						var id = value;
+CmdUtils.log('id ' + id);
+						if (_tasks[id]){	
+							if (!_tasks[id].smart_lists){
+								_tasks[id].smart_lists = [];
+							} // if
+							if (!_tasks[id].smart_lists.join().match(smartListId)){
+								_tasks[id].smart_lists.push(smartListId);
+							} // if
+						} // if
+					} // if
+				} // if - else
+			}; // processTaskSeries
+			
+			if (j.tasks.list){
+				
+				CmdUtils.log(j.tasks.list.taskseries);
+				
+//				jQuery.each(j.tasks.list.taskseries, processTaskSeries);
+			}
+								
+		}; // callback
+		
+		RTM.rtm_call_json_async(apiParams, callback);
+			
+	}
+	
 	function _mark_smart_tasks(tasks, force){
 		
 CmdUtils.log('_mark_smart_tasks start');   
@@ -848,45 +896,13 @@ CmdUtils.log('_mark_smart_tasks start');
         if (!smartLists) return;
 
         //Note to self: we have to call each smartlist individually because getting all smart list tasks in one go returns a dataset without the smartlist id, so one cannot identify the corresponding smart list when looping through the resultset.
+        
+        var i = 500;
         for (var smartListId in smartLists){            
-
-            var apiParams = {
-                method: "rtm.tasks.getList",
-                filter: "status:incomplete AND list:\""+smartLists[smartListId]+"\"",
-            }
-                               
-            if (!force){
-                apiParams.last_sync = _lastUpdated;
-            }       
-
-CmdUtils.log('apiParams' );
-CmdUtils.log(apiParams);
-
-            RTM.rtm_call_json_sync(apiParams, 
-                function(j) {
-                    CmdUtils.log(j);
-                    if (j.tasks.list){
-	                    jQuery.each(j.tasks.list.taskseries, function(key,value){
-	                        if (key == 'id') {
-	                            var id = value;
-	                            CmdUtils.log(id);
-	                            if (tasks[id]){
-	                                if (!tasks[id].smart_lists){
-	                                    tasks[id].smart_lists = [];
-	                                }
-	                                if (!tasks[id].smart_lists.join().match(smartListId)){
-	                                    tasks[id].smart_lists.push(smartListId);
-	                                }
-	                            }
-	                        }
-	                    }
-                		);
-                	}
-                });
+			Utils.setTimeout( _mark_smart_task_list, i+=500, smartListId, smartLists[smartListId], force); 
         }
 
-CmdUtils.log('_mark_smart_tasks end');  
-             
+CmdUtils.log('_mark_smart_tasks end');               
         return tasks;
     }
 	
