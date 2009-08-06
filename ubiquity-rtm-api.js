@@ -846,24 +846,15 @@ RTM.tasks = function(){
 		CmdUtils.log('apiParams: ' + apiParams.filter);
 		
 		var callback = function(j) {
-			var processTaskSeries = function(key,value){
-				if (value[key]){
-					var taskseries = value[key];
-					var id =	taskseries.id;		
-CmdUtils.log('id ' + id);		
-					if (_tasks[id]){
-						if (!_tasks[id].smart_lists){
-							_tasks[id].smart_lists = [];
-						} // if
-						if (!_tasks[id].smart_lists.join().match(smartListId)){
-							_tasks[id].smart_lists.push(smartListId);
-						} // if
-					} // if
-				} else {
-					if (key = 'id'){
-						var id = value;
-CmdUtils.log('id ' + id);
-						if (_tasks[id]){	
+			CmdUtils.log(j);
+			if (j.tasks.list){
+				var ts = j.tasks.list.taskseries;
+				var smartListId = j.tasks.list.id;
+				
+				if (Utils.isArray(ts)){
+					for (var ts_index in ts){
+						var id = ts[ts_index].id;						
+						if (_tasks[id]){
 							if (!_tasks[id].smart_lists){
 								_tasks[id].smart_lists = [];
 							} // if
@@ -871,15 +862,19 @@ CmdUtils.log('id ' + id);
 								_tasks[id].smart_lists.push(smartListId);
 							} // if
 						} // if
+					}	
+				}
+				else
+				{
+					if (_tasks[ts.id]){
+						if (!_tasks[ts.id].smart_lists){
+							_tasks[ts.id].smart_lists = [];
+						} // if
+						if (!_tasks[ts.id].smart_lists.join().match(smartListId)){
+							_tasks[ts.id].smart_lists.push(smartListId);
+						} // if
 					} // if
-				} // if - else
-			}; // processTaskSeries
-			
-			if (j.tasks.list){
-				
-				CmdUtils.log(j.tasks.list.taskseries);
-				
-//				jQuery.each(j.tasks.list.taskseries, processTaskSeries);
+				}
 			}
 								
 		}; // callback
@@ -902,7 +897,8 @@ CmdUtils.log('_mark_smart_tasks start');
 			Utils.setTimeout( _mark_smart_task_list, i+=500, smartListId, smartLists[smartListId], force); 
         }
 
-CmdUtils.log('_mark_smart_tasks end');               
+CmdUtils.log('_mark_smart_tasks end');
+               
         return tasks;
     }
 	
