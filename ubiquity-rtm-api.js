@@ -25,6 +25,7 @@ RtmNounType.prototype._init = function(name, expectedWords, defaultWord) {
 	};
 	}
 }
+
 RtmNounType.prototype.suggest = function(text, html) {
     var suggestions = [];
     if (typeof text != "string") {
@@ -337,24 +338,26 @@ RTM.rtm_call_json_async = function(apiParams, successCallback){
 	}
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
-	apiParams.format = 'json';	
-	jQuery.ajax({
+	apiParams.format = 'json';		
+	var r = jQuery.ajax({
 		type: "POST",
 		url: RTM.constants.url.API_URL,
 		async: false,
 		data: RTM.create_rtm_parameter_object(apiParams, true),
 		dataType: "json",
-		success: function(j){			
-			if (j.rsp.stat == 'fail') {
-				CmdUtils.log('Error whilst calling ' + apiParams.method + '. Error Message: ' +  j.rsp.err.msg);
-			} else {
-				successCallback(j.rsp);
-			}
-		},
 		error: function(XMLHttpRequest, textStatus, errorThrown){
 			CmdUtils.log('RTM Service Call Failure whilst calling ' + apiParams.method + '. Error Message: ' + textStatus +'. ' + XMLHttpRequest.statusText);
 		}
-	})
+	});
+	
+	if (r.status == 200){
+		var j = Utils.decodeJson(r.responseText);
+		if (j.rsp.stat == 'fail') {
+			CmdUtils.log('Error: ' + j.rsp.err.msg);
+		} else {
+			return successCallback(j.rsp);
+		}
+	}
 }
 
 RTM.rtm_call_xml_sync = function(apiParams, successCallback){
@@ -424,6 +427,7 @@ RTM.login = function() {
         perms: RTM.constants.PERMISSION_LEVEL,
     };
     var authUrl = RTM.constants.url.AUTH_URL + RTM.create_rtm_parameter_string(authParams, false);
+    
     Utils.openUrlInBrowser(authUrl);
 }
 
@@ -462,7 +466,9 @@ RTM.get_timeline = function() {
 }
 
 RTM.get_new_frob = function() {
-	return RTM.rtm_call_json_sync({method: 'rtm.auth.getFrob'}, function(r){return r.frob});
+	var asd = RTM.rtm_call_json_sync({method: 'rtm.auth.getFrob'}, function(r){return r.frob});
+	CmdUtils.log(asd);
+	return asd;
 }
 
 RTM.get_new_auth_token = function(frob) {
