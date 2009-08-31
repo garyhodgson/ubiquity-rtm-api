@@ -40,13 +40,6 @@
 	</div>
 
 	<p>&nbsp;</p>
-
-	<div class="toc" id="messages"><h4>Latest News</h4>
-		<ul>
-			<li>Version 0.4 released. More details <a href="http://garyhodgson.github.com/2009/07/07/version-0-4-rtm-ubiquity-released.html">here</a>.  Please note that the documentation here is a little out of date with 0.4, but it still gives a comprehensive overview of the commands available. (7th July 2009)</li>
-		</ul>
-
-	</div>
 		
 	<h1><a id="About" name="About">About</a></h1>
 	<p>
@@ -213,6 +206,7 @@
 	<blockquote>
 		<div class="release_notes">
 			<ul>
+				<li><a target="_blank" href="version.html?version=0.4.1">0.4.1</a> - 31st August 2009 - Fixed Firefox freeze problem. <a href="http://garyhodgson.github.com/2009/08/31/version-0-4-1-of-rtm-ubiquity-released.html">Related Blog Post</a></li>
 				<li><a target="_blank" href="version.html?version=0.4">0.4</a> - 7th July 2009 - Several bug fixes and prep for 0.5 Ubiquity release. <a href="http://garyhodgson.github.com/2009/07/07/version-0-4-rtm-ubiquity-released.html">Related Blog Post</a></li>
 				<li><a target="_blank" href="version.html?version=0.3.8">0.3.8</a> - 25th March 2009 - Small bug fix introduced with Ubiquity 0.1.7 which caused the entire script to be rejected and therefore stopped all commands from appearing.</li>
 				<li><a target="_blank" href="version.html?version=0.3.7">0.3.7</a> - 21st December 2008 - add-task command now allows any abitrary text to be used.  A previous change had accidentally restricted this to list only existing tags.</li>
@@ -272,11 +266,11 @@
 		<blockquote>
 
 			<ul class="known_issues">
-				<h5>Version 0.3</h5>
-
+				<h5>Version 0.4</h5>
 				<li>Suggestions are not displayed until a character in the suggestion is actually typed. See <a href="http://labs.toolness.com/trac/ticket/359">Ubiquity bug 359</a>for details.</li>
-				<li>Using a modifier as a legitimate part of a variable (e.g. 'rtm-add-task go to the opera to inbox') would cause the Ubiquity command to fail.  See <a href="http://labs.toolness.com/trac/ticket/358">Ubiquity bug 358</a> for details.</li>
-				<li>Having some text selected in the page is used as an url, whether you have used the url modifier or not.</li>
+				<li>Any text selected in the page is used as an url, whether you have used the url modifier or not.</li>
+				<h5>Version 0.3</h5>
+				<li class="completed">Using a modifier as a legitimate part of a variable (e.g. 'rtm-add-task go to the opera to inbox') would cause the Ubiquity command to fail.  See <a href="http://labs.toolness.com/trac/ticket/358">Ubiquity bug 358</a> for details.</li>
 				<h5>Version 0.2</h5>
 				<li class="completed">There is no order to the tasks in v0.2 ... that has to wait until v0.2.1 or v0.3, and only the top 20 tasks are shown for a given search criteria. Future editions should allow this to be configured.
 				</li>
@@ -290,8 +284,6 @@
 	<h1><a id="Caveats_and_Notes" name="Caveats_and_Notes">Caveats and Notes</a></h1>
 	<blockquote>
 		<ul>
-
-
 			<li><span class="highlight">The authorisation token is stored locally in your browser, and will remain there until you manually call the 'rtm-logout' function. This means that anyone with access to your PC whilst the RTM Ubiquity command is active can act on your Task Lists!</span> Hopefully they will actually perform the tasks too, but if you work on a shared PC then please bear this in mind.</li>
 			<li>I have only tested this with a small set of task lists and tasks.  If you have millions of tasks (hard luck!) then the command may be slow for you.  I would be interested to know how it holds up in either case, so feel free to <a href="mailto:contact@garyhodgson.com" title="drop me a line">drop me a line</a>!</li>
 			<li>One of the beauties of ubiquity is that it is really easy to take a command you like, and tweak your own copy to meet your own needs. Please feel free to do so with this command, but if you make modifications please use your own <a href="http://www.rememberthemilk.com/services/api/keys.rtm" target="_blank" title="RTM API Key">RTM API Key</a>.  Feel free to <a href="mailto:contact@garyhodgson.com"  target="_blank" title="contact me" >contact me</a> if you have any questions, and I will see what I can do, and the <a href="http://groups.google.com/group/rememberthemilk-api/" target="_blank" title="RTM Google Group">RTM</a> and <a href="http://groups.google.com/group/ubiquity-firefox"  target="_blank" title="Ubiquity Google Group" >Ubiquity</a> forums are pretty handy too.</li>
