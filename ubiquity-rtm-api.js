@@ -132,7 +132,7 @@ RTM.constants = {
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.4",
+	VERSION: "0.4.1",
 }
 
 
