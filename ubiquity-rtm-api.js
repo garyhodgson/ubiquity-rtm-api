@@ -319,7 +319,9 @@ RTM.create_rtm_parameter_string = function(apiParams) {
 }
 
 RTM.rtm_call_json_async = function(apiParams, successCallback){
-CmdUtils.log('rtm_call_json_async');		
+
+CmdUtils.log('rtm_call_json_async: ' + apiParams.method);	
+		
 	apiParams.format = 'json';	
 	jQuery.ajax({
 		type: "POST",
@@ -344,7 +346,8 @@ CmdUtils.log('rtm_call_json_async');
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
 	
-CmdUtils.log('rtm_call_json_sync');	
+CmdUtils.log('rtm_call_json_sync: ' + apiParams.method);	
+
 	apiParams.format = 'json';		
 	var r = jQuery.ajax({
 		type: "POST",
@@ -365,22 +368,6 @@ CmdUtils.log('rtm_call_json_sync');
 		} else {
 			return successCallback(j.rsp);
 		}
-	}
-}
-
-RTM.rtm_call_xml_sync = function(apiParams, successCallback){
-	var r = jQuery.ajax({
-		type: "POST",
-		url: RTM.constants.url.API_URL,
-		async: false,
-		data: RTM.create_rtm_parameter_object(apiParams, true),
-		dataType: "xml",
-	});
-	var j = jQuery(r.responseXML);
-	if (j.find("rsp").attr("stat") == 'fail') {
-		CmdUtils.log('Error: ' + j.find("rsp").attr("msg"));
-	} else {
-		return successCallback(j);
 	}
 }
 
@@ -857,30 +844,64 @@ RTM.tasks = function(){
 		}
 		var callback = function(j) {
 			if (j.tasks.list){
-				var ts = j.tasks.list.taskseries;			
-				if (Utils.isArray(ts)){
-					for (var ts_index in ts){
-						var id = ts[ts_index].id;						
-						if (tasks[id]){
-							if (!tasks[id].smart_lists){
-								tasks[id].smart_lists = [];
+				
+				if (Utils.isArray(j.tasks.list)){
+					for (var i in j.tasks.list){
+						
+						var ts = j.tasks.list[i].taskseries;
+CmdUtils.log(ts);	
+						if (Utils.isArray(ts)){
+							for (var ts_index in ts){
+								var id = ts[ts_index].id;						
+								if (tasks[id]){
+									if (!tasks[id].smart_lists){
+										tasks[id].smart_lists = [];
+									} // if
+									if (!tasks[id].smart_lists.join().match(smartListId)){
+										tasks[id].smart_lists.push(smartListId);
+									} // if
+								} // if
+							}	
+						}
+						else
+						{
+							if (tasks[ts.id]){
+								if (!tasks[ts.id].smart_lists){
+									tasks[ts.id].smart_lists = [];
+								} // if
+								if (!tasks[ts.id].smart_lists.join().match(smartListId)){
+									tasks[ts.id].smart_lists.push(smartListId);
+								} // if
 							} // if
-							if (!tasks[id].smart_lists.join().match(smartListId)){
-								tasks[id].smart_lists.push(smartListId);
+						}
+					}
+				} else {
+					var ts = j.tasks.list.taskseries;
+	
+					if (Utils.isArray(ts)){
+						for (var ts_index in ts){
+							var id = ts[ts_index].id;						
+							if (tasks[id]){
+								if (!tasks[id].smart_lists){
+									tasks[id].smart_lists = [];
+								} // if
+								if (!tasks[id].smart_lists.join().match(smartListId)){
+									tasks[id].smart_lists.push(smartListId);
+								} // if
+							} // if
+						}	
+					}
+					else
+					{
+						if (tasks[ts.id]){
+							if (!tasks[ts.id].smart_lists){
+								tasks[ts.id].smart_lists = [];
+							} // if
+							if (!tasks[ts.id].smart_lists.join().match(smartListId)){
+								tasks[ts.id].smart_lists.push(smartListId);
 							} // if
 						} // if
-					}	
-				}
-				else
-				{
-					if (tasks[ts.id]){
-						if (!tasks[ts.id].smart_lists){
-							tasks[ts.id].smart_lists = [];
-						} // if
-						if (!tasks[ts.id].smart_lists.join().match(smartListId)){
-							tasks[ts.id].smart_lists.push(smartListId);
-						} // if
-					} // if
+					}
 				}
 			}
 								
@@ -1168,7 +1189,7 @@ if (RTM.isParser2())
 	 */
 	 
 	CmdUtils.CreateCommand({
-	    names: ["rtm-refresh"],  
+	    names:["refresh tasklists", "rtm refresh", "rtm-refresh"],  
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 	        name: "Gary Hodgson",
@@ -1206,7 +1227,7 @@ if (RTM.isParser2())
 	});	
 	
 	CmdUtils.CreateCommand({
-	    names: ["rtm-logout"],
+	    names: ["logout rtm", "rtm-logout"],
 		homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 	        name: "Gary Hodgson",
@@ -1239,7 +1260,7 @@ if (RTM.isParser2())
 	});	
 	
 	CmdUtils.CreateCommand({
-	    names: ["rtm-login"],
+	    names: ["login rtm", "rtm-login"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 	        name: "Gary Hodgson",
@@ -1268,7 +1289,7 @@ if (RTM.isParser2())
 	});
 	
 	CmdUtils.CreateCommand({
-	    names: ["rtm-add-task"],
+	    names: ["add task", "rtm add task", "rtm-add-task"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 	        name: "Gary Hodgson",
@@ -1366,7 +1387,7 @@ if (RTM.isParser2())
 	});
 	
 	CmdUtils.CreateCommand({
-	    names: ["rtm-note-task"],
+	    names:["note task", "rtm note task", "rtm-note-task"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 	        name: "Gary Hodgson",
@@ -1455,7 +1476,7 @@ if (RTM.isParser2())
 	});
 	
 	CmdUtils.CreateCommand({
-		names: ["rtm-prioritise-task"],
+		names:["prioritise task", "rtm prioritise task", "rtm-prioritise-task"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 			name: "Gary Hodgson",
@@ -1527,7 +1548,7 @@ if (RTM.isParser2())
 	});
 	
 	CmdUtils.CreateCommand({
-		names: ["rtm-move-task"],
+		names:["move task", "rtm move task", "rtm-move-task"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 		author: {
 			name: "Gary Hodgson",
@@ -1609,7 +1630,7 @@ if (RTM.isParser2())
 	
 	
 	CmdUtils.CreateCommand({
-		names: ["rtm-postpone-task"],
+		names:["rtm-postpone-task", "rtm postpone task", "postpone task"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 		author: {
 			name: "Gary Hodgson",
@@ -1670,7 +1691,7 @@ if (RTM.isParser2())
 	
 	
 	CmdUtils.CreateCommand({
-	    names: ["rtm-complete-task"],
+	    names:["complete task", "rtm complete task", "rtm-complete-task"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 	        name: "Gary Hodgson",
@@ -1736,7 +1757,7 @@ if (RTM.isParser2())
 	});
 	
 	CmdUtils.CreateCommand({
-	    names: ["rtm-view-tasks"],
+	    names:["view tasks", "rtm view tasks", "rtm-view-tasks"],
 	    homepage: "http://www.garyhodgson.com/ubiquity",
 	    author: {
 	        name: "Gary Hodgson",
