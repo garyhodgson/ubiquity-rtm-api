@@ -125,6 +125,7 @@ RTM.constants = {
 		PROBLEM_COMPLETING_TASK: "A problem occurred completing the task.",
 		TASK_ADDED_INBOX: "Cannot add to a smart list. Task added to Inbox.",
 		NO_TASKS_FOUND: "No tasks found. Press enter to force a sync with RTM.",
+		TASKS_RETRIEVED: "Retrieved tasks from RTM.",
 	},
 	TEN_MINUTES: 600000,
 	TWENTY_FOUR_HOURS: 86400000,
@@ -318,6 +319,7 @@ RTM.create_rtm_parameter_string = function(apiParams) {
 }
 
 RTM.rtm_call_json_async = function(apiParams, successCallback){
+CmdUtils.log('rtm_call_json_async');		
 	apiParams.format = 'json';	
 	jQuery.ajax({
 		type: "POST",
@@ -341,6 +343,8 @@ RTM.rtm_call_json_async = function(apiParams, successCallback){
 	
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
+	
+CmdUtils.log('rtm_call_json_sync');	
 	apiParams.format = 'json';		
 	var r = jQuery.ajax({
 		type: "POST",
@@ -431,7 +435,7 @@ RTM.login = function() {
         perms: RTM.constants.PERMISSION_LEVEL,
     };
     var authUrl = RTM.constants.url.AUTH_URL + RTM.create_rtm_parameter_string(authParams, false);
-    
+
     Utils.openUrlInBrowser(authUrl);
 }
 
@@ -490,6 +494,7 @@ RTM.get_new_auth_token = function(frob) {
        	RTM.get_settings();		
 			
        	RTM.lists.update();
+       	
 		RTM.tasks.force_update_all();
  
 		return RTM.prefs.get(RTM.constants.pref.AUTH_TOKEN, null);
@@ -932,7 +937,7 @@ RTM.tasks = function(){
 
 			if (Application.storage.get(RTM.constants.store.TASKS, null) == null) { 
 				// show message on very first run
-				displayMessage({icon: RTM.constants.url.ICON_URL, title: "RTM Ubiquity", text: "Retrieved tasks from RTM."});
+				displayMessage({icon: RTM.constants.url.ICON_URL, title: "RTM Ubiquity", text: RTM.constants.msg.TASKS_RETRIEVED});
 			}
 		
 			Application.storage.set(RTM.constants.store.LAST_TASKS_UPDATE, RTM.get_time());
@@ -1786,8 +1791,7 @@ if (RTM.isParser2())
 	    	
 	        pblock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
 	    },
-	    execute: function(args) {
-	    	
+	    execute: function(args) {	
 	        if (!RTM.check_token()) {
 	            displayMessage({icon: RTM.constants.url.ICON_URL, title: this.msg_title, text: RTM.constants.msg.LOGGING_IN_MSG});
 	            RTM.login();
