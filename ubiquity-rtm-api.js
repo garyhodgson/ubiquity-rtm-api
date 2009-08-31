@@ -8,6 +8,7 @@
  * version: "0.4.1" 
 */
 
+
 /**
  * Core Type Extension
  * Now returns the index of the suggestion array as the data element 
@@ -335,7 +336,9 @@ RTM.rtm_call_json_async = function(apiParams, successCallback){
 			CmdUtils.log('RTM Service Call Failure whilst calling ' + apiParams.method + '. Error Message: ' + textStatus +'. ' + XMLHttpRequest.statusText);
 		}
 		});
+		
 	}
+	
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
 	apiParams.format = 'json';		
@@ -348,6 +351,7 @@ RTM.rtm_call_json_sync = function(apiParams, successCallback){
 		error: function(XMLHttpRequest, textStatus, errorThrown){
 			CmdUtils.log('RTM Service Call Failure whilst calling ' + apiParams.method + '. Error Message: ' + textStatus +'. ' + XMLHttpRequest.statusText);
 		}
+		
 	});
 	
 	if (r.status == 200){
@@ -466,9 +470,7 @@ RTM.get_timeline = function() {
 }
 
 RTM.get_new_frob = function() {
-	var asd = RTM.rtm_call_json_sync({method: 'rtm.auth.getFrob'}, function(r){return r.frob});
-	CmdUtils.log(asd);
-	return asd;
+	return RTM.rtm_call_json_sync({method: 'rtm.auth.getFrob'}, function(r){return r.frob});
 }
 
 RTM.get_new_auth_token = function(frob) {
@@ -838,7 +840,7 @@ RTM.tasks = function(){
 		return taskseries;
 	}
 	
-	function _mark_smart_task_list(smartListId, smartListName, force){
+	function _mark_smart_task_list(tasks, smartListId, smartListName, force){
 		
 		var apiParams = {
 			method: "rtm.tasks.getList",
@@ -847,37 +849,31 @@ RTM.tasks = function(){
 	
 		if (!force){
 			apiParams.last_sync = _lastUpdated;
-		}       
-		
-		CmdUtils.log('apiParams: ' + apiParams.filter);
-		
+		}
 		var callback = function(j) {
-			CmdUtils.log(j);
 			if (j.tasks.list){
-				var ts = j.tasks.list.taskseries;
-				var smartListId = j.tasks.list.id;
-				
+				var ts = j.tasks.list.taskseries;			
 				if (Utils.isArray(ts)){
 					for (var ts_index in ts){
 						var id = ts[ts_index].id;						
-						if (_tasks[id]){
-							if (!_tasks[id].smart_lists){
-								_tasks[id].smart_lists = [];
+						if (tasks[id]){
+							if (!tasks[id].smart_lists){
+								tasks[id].smart_lists = [];
 							} // if
-							if (!_tasks[id].smart_lists.join().match(smartListId)){
-								_tasks[id].smart_lists.push(smartListId);
+							if (!tasks[id].smart_lists.join().match(smartListId)){
+								tasks[id].smart_lists.push(smartListId);
 							} // if
 						} // if
 					}	
 				}
 				else
 				{
-					if (_tasks[ts.id]){
-						if (!_tasks[ts.id].smart_lists){
-							_tasks[ts.id].smart_lists = [];
+					if (tasks[ts.id]){
+						if (!tasks[ts.id].smart_lists){
+							tasks[ts.id].smart_lists = [];
 						} // if
-						if (!_tasks[ts.id].smart_lists.join().match(smartListId)){
-							_tasks[ts.id].smart_lists.push(smartListId);
+						if (!tasks[ts.id].smart_lists.join().match(smartListId)){
+							tasks[ts.id].smart_lists.push(smartListId);
 						} // if
 					} // if
 				}
@@ -890,9 +886,6 @@ RTM.tasks = function(){
 	}
 	
 	function _mark_smart_tasks(tasks, force){
-		
-CmdUtils.log('_mark_smart_tasks start');   
-
         var smartLists = RTM.lists.get_smart_list_names(RTM.constants.store.SMART_LIST);
         if (!smartLists) return;
 
@@ -900,11 +893,8 @@ CmdUtils.log('_mark_smart_tasks start');
         
         var i = 500;
         for (var smartListId in smartLists){            
-			Utils.setTimeout( _mark_smart_task_list, i+=500, smartListId, smartLists[smartListId], force); 
+			Utils.setTimeout( _mark_smart_task_list, i+=500, tasks, smartListId, smartLists[smartListId], force); 
         }
-
-CmdUtils.log('_mark_smart_tasks end');
-               
         return tasks;
     }
 	
@@ -940,10 +930,6 @@ CmdUtils.log('_mark_smart_tasks end');
 				}
 			}			
 
-			if (markSmartLists){
-				tasks = _mark_smart_tasks(tasks, force);
-			}
-			
 			if (Application.storage.get(RTM.constants.store.TASKS, null) == null) { 
 				// show message on very first run
 				displayMessage({icon: RTM.constants.url.ICON_URL, title: "RTM Ubiquity", text: "Retrieved tasks from RTM."});
@@ -954,7 +940,10 @@ CmdUtils.log('_mark_smart_tasks end');
 
 			Application.storage.set(RTM.constants.store.TASKS, tasks);
 			_tasks = tasks;
-			
+
+			if (markSmartLists){
+				_mark_smart_tasks(_tasks, force);
+			}			
 			_update_task_names();
 			_update_tag_list();
 			
@@ -1137,7 +1126,7 @@ CmdUtils.log('_mark_smart_tasks end');
 			
 			for (var t in _tasks) {
 				var subTask = _tasks[t]; 				
-				var listId = subTask.list_id;
+				var listId = subTask.list_id;				
 				var smartListMatch = ((subTask.smart_lists) && (subTask.smart_lists.join().match(searchListId) != null)) || false;
 				var tagMatch = false;
 				if (searchTag && subTask.tags && subTask.tags.tag){
@@ -1759,12 +1748,14 @@ if (RTM.isParser2())
 	    ],
 	    msg_title: "RTM Ubiquity: View Tasks",
 	    preview: function(pblock, args) {
+	    	
 	        pblock.innerHTML = this.description;        
 	        
 	    	if (!RTM.check_token()) {
 	        	pblock.innerHTML = RTM.constants.msg.LOGIN_MSG;
 	            return;
 	        }
+	        
 	        var tasks = RTM.tasks.get_tasks(false);
 	        if (!tasks) {
 	        	pblock.innerHTML = RTM.constants.msg.NO_TASKS_FOUND;
