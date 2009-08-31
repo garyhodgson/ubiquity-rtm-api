@@ -844,7 +844,8 @@ RTM.tasks = function(){
 		}
 		var callback = function(j) {
 			if (j.tasks.list){
-				
+CmdUtils.log('j.tasks.list');				
+CmdUtils.log(j.tasks.list);				
 				if (Utils.isArray(j.tasks.list)){
 					for (var i in j.tasks.list){
 						
@@ -903,6 +904,7 @@ CmdUtils.log(ts);
 						} // if
 					}
 				}
+				Application.storage.set(RTM.constants.store.TASKS, tasks)
 			}
 								
 		}; // callback
@@ -917,9 +919,9 @@ CmdUtils.log(ts);
 
         //Note to self: we have to call each smartlist individually because getting all smart list tasks in one go returns a dataset without the smartlist id, so one cannot identify the corresponding smart list when looping through the resultset.
         
-        var i = 500;
+        var i = 1000;
         for (var smartListId in smartLists){            
-			Utils.setTimeout( _mark_smart_task_list, i+=500, tasks, smartListId, smartLists[smartListId], force); 
+			Utils.setTimeout( _mark_smart_task_list, i+=1000, tasks, smartListId, smartLists[smartListId], force); 
         }
         return tasks;
     }
