@@ -5,7 +5,7 @@
  * source: "http://github.com/garyhodgson/ubiquity-rtm-api", 
  * email: "contact@garyhodgson.com",
  * license: "MPL",
- * version: "0.4.1" 
+ * version: "0.4.2" 
 */
 
 
@@ -133,25 +133,21 @@ RTM.constants = {
 	PERMISSION_LEVEL: 'delete',
 	API_KEY: "0656e1d6fb64cadd726b0a532176119a",	
 	PARSE_DATE_FROM_TASKNAME: 1,
-	VERSION: "0.4.1",
+	VERSION: "0.4.2",
 }
 
 
 RTM.prefs = {
     has: function(key) {
-
     	return Application.prefs.has(key) && Application.prefs.get(key).value != undefined;
     },
-    set: function(key, value) {
-    	
+    set: function(key, value) {    	
         Application.prefs.setValue(key, value);
     },
     get: function(key, defaultValue) {
-
         return (this.has(key)) ? Application.prefs.get(key).value: defaultValue;
     },
     remove: function(key) {
-
         if (this.has(key)) Application.prefs.get(key).reset();
     },
     remove_all: function() {	
@@ -203,6 +199,22 @@ RTM.template = {
 			+ "		<li>{if (item.notes.note.title)}<em>${item.notes.note.title}</em><br/>{/if}${item.notes.note.$t}"
 			+ "	</div>"
 			+ "{/if}"
+			+ "</div>",
+	SMART_ADD: "<div style=\"border:dashed 1px grey;padding:10px;margin:20px;\">"
+			+ "<table border='0'>"
+			+ "<tr><th>&nbsp;</th><th>Smart Add Syntax</th></tr>"
+			+ "<tr><td><strong>!</strong></td><td>Priority</td></tr>"
+			+ "<tr><td><strong>#</strong></td><td>List or Tag</td></tr>"
+			+ "<tr><td><strong>@</strong></td><td>Location</td></tr>"
+			+ "<tr><td><strong>*</strong></td><td>Repeat</td></tr>"
+			+ "<tr><td><strong>=</strong></td><td>Time Estimate</td></tr>"
+			+ "<tr><td>&nbsp;</td><td>URLs will be automagically recognised if they begin with http:// etc.</td></tr>"
+			+ "<tr><td>&nbsp;</td><td>Dates and times will be recognised when they are at the beginning of the task name. See: <a href=http://www.rememberthemilk.com/help/answers/basics/dateformat.rtm target=_blank>Accepted date formats.</a></td></tr>"
+			+ "</table>"
+			+ "<br/>"
+			+ "For example, the following entry would create a task called “do something” in the Inbox for today, with priority 3, a tag, url and location:"
+			+ "<br/>"
+			+ "<div style='font-family:monospace; margin-left:10px;'>add task do something today !3 #Inbox #tag1 @home http://google.com</div>" 
 			+ "</div>",
 }
 
@@ -318,10 +330,7 @@ RTM.create_rtm_parameter_string = function(apiParams) {
 	return paramsString;
 }
 
-RTM.rtm_call_json_async = function(apiParams, successCallback){
-
-CmdUtils.log('rtm_call_json_async: ' + apiParams.method);	
-		
+RTM.rtm_call_json_async = function(apiParams, successCallback){		
 	apiParams.format = 'json';	
 	jQuery.ajax({
 		type: "POST",
@@ -345,9 +354,6 @@ CmdUtils.log('rtm_call_json_async: ' + apiParams.method);
 	
 	
 RTM.rtm_call_json_sync = function(apiParams, successCallback){
-	
-CmdUtils.log('rtm_call_json_sync: ' + apiParams.method);	
-
 	apiParams.format = 'json';		
 	var r = jQuery.ajax({
 		type: "POST",
@@ -771,11 +777,8 @@ RTM.lists = function(){
 RTM.tasks = function(){
 	
 	var _lastUpdated = Application.storage.get(RTM.constants.store.LAST_TASKS_UPDATE, null) ;	
-		
 	var _tasks = _get_tasks();
-
 	var _taskNames = _get_task_names();
-	
 	var _tags = _get_tags();
 
 	function _get_tasks(){
@@ -843,14 +846,11 @@ RTM.tasks = function(){
 			apiParams.last_sync = _lastUpdated;
 		}
 		var callback = function(j) {
-			if (j.tasks.list){
-CmdUtils.log('j.tasks.list');				
-CmdUtils.log(j.tasks.list);				
+			if (j.tasks.list){	
 				if (Utils.isArray(j.tasks.list)){
 					for (var i in j.tasks.list){
 						
 						var ts = j.tasks.list[i].taskseries;
-CmdUtils.log(ts);	
 						if (Utils.isArray(ts)){
 							for (var ts_index in ts){
 								var id = ts[ts_index].id;						
@@ -1348,7 +1348,7 @@ if (RTM.isParser2())
 	
 			var ptemplate = "Add Task:";
 			ptemplate += RTM.template.TASK;
-			
+			ptemplate += RTM.template.SMART_ADD;
 	
 	        pBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
 	        
