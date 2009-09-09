@@ -1323,9 +1323,6 @@ if (RTM.isParser2())
 	        var smart_add_lists_tags = args.object.text.match(/#[\w'-]*/g);
 	        
 	        if (smart_add_lists_tags){
-		        CmdUtils.log('smart_add_lists_tags');
-		        CmdUtils.log(smart_add_lists_tags);
-		        
 		        var regular_list_names_array = [];
 		        
 		        $.each(RTM.lists.get_regular_list_names(),
@@ -1334,24 +1331,14 @@ if (RTM.isParser2())
 			        }		        	
 		        );
 		        
-		        CmdUtils.log('regular_list_names_array');
-		        CmdUtils.log(regular_list_names_array);
-		        
 		        var listed = $.grep(regular_list_names_array, function(n,i) { 
 		        	return $.inArray('#'+n, smart_add_lists_tags) != -1
 	        	});
-				CmdUtils.log('listed: ');
-				CmdUtils.log(listed);		
-		
+				
 		        var smart_add_list = listed ? listed[0] : null;
-		        
 		        var smart_add_tags = $.map(smart_add_lists_tags, function(n,i) {
 					return ($.inArray(n.substring(1), regular_list_names_array) == -1)? n.substring(1): null;
 				});
-				
-				CmdUtils.log('smart_add_tags: ');
-				CmdUtils.log(smart_add_tags);		
-		        
 		    }
 		        
 	        var taskName = args.object.summary || null;
@@ -1386,8 +1373,26 @@ if (RTM.isParser2())
 	
 			var ptemplate = "Add Task:";
 			ptemplate += RTM.template.TASK;
+			
+			
+			if (smart_add_lists_tags){
+				previewData.lists = regular_list_names_array;
+				previewData.tags = RTM.tasks.get_tag_array();
+				ptemplate +=  "<div>";
+				ptemplate +=   " lists: <span style=\"color:#359aff;font-size:0.7em\">";
+				ptemplate +=   "     {for list in lists}";
+				ptemplate +=   "     ${list}&nbsp;";
+				ptemplate +=   "     {/for}";
+				ptemplate +=   "</span>";
+				ptemplate +=   "<br>";
+				ptemplate +=   " tags: <span style=\"color:#359aff;font-size:0.7em\">";
+				ptemplate +=   "     {for tag in tags}";
+				ptemplate +=   "     ${tag}&nbsp;";
+				ptemplate +=   "     {/for}";
+				ptemplate +=   "</span>";
+				ptemplate +=   "</div>";
+			}
 			ptemplate += RTM.template.SMART_ADD;
-	
 	        pBlock.innerHTML = CmdUtils.renderTemplate(ptemplate, previewData);
 	        
 	    },
