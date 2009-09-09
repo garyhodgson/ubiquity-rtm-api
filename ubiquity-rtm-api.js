@@ -204,7 +204,7 @@ RTM.template = {
 			+ "<table border='0'>"
 			+ "<tr><th>&nbsp;</th><th>Smart Add Syntax</th></tr>"
 			+ "<tr><td><strong>!</strong></td><td>Priority</td></tr>"
-			+ "<tr><td><strong>#</strong></td><td>List or Tag</td></tr>"
+			+ "<tr><td><strong>#</strong></td><td>List or Tag (List has higher priority over a tag with the same name)</td></tr>"
 			+ "<tr><td><strong>@</strong></td><td>Location</td></tr>"
 			+ "<tr><td><strong>*</strong></td><td>Repeat</td></tr>"
 			+ "<tr><td><strong>=</strong></td><td>Time Estimate</td></tr>"
@@ -1316,12 +1316,50 @@ if (RTM.isParser2())
 	        }
 	        
 	        var defaultListName = RTM.lists.get_list_name(RTM.prefs.get(RTM.constants.pref.DEFAULT_LIST, null))||'Inbox';
+	        var smart_add_priority_matches = args.object.text.match(/![123N]/);
+	        var smart_add_priority = smart_add_priority_matches ? smart_add_priority_matches.toString().substring(1) : null;
+	        var smart_add_url = args.object.text.match("f|ht{1}tp://[-a-zA-Z0-9@:%_\+.~#?&//=]+")
 	        
+	        var smart_add_lists_tags = args.object.text.match(/#[\w'-]*/g);
+	        
+	        if (smart_add_lists_tags){
+		        CmdUtils.log('smart_add_lists_tags');
+		        CmdUtils.log(smart_add_lists_tags);
+		        
+		        var regular_list_names_array = [];
+		        
+		        $.each(RTM.lists.get_regular_list_names(),
+			        function(i, n) {
+			        	regular_list_names_array.push(n);
+			        }		        	
+		        );
+		        
+		        CmdUtils.log('regular_list_names_array');
+		        CmdUtils.log(regular_list_names_array);
+		        
+		        var listed = $.grep(regular_list_names_array, function(n,i) { 
+		        	return $.inArray('#'+n, smart_add_lists_tags) != -1
+	        	});
+				CmdUtils.log('listed: ');
+				CmdUtils.log(listed);		
+		
+		        var smart_add_list = listed ? listed[0] : null;
+		        
+		        var smart_add_tags = $.map(smart_add_lists_tags, function(n,i) {
+					return ($.inArray(n.substring(1), regular_list_names_array) == -1)? n.substring(1): null;
+				});
+				
+				CmdUtils.log('smart_add_tags: ');
+				CmdUtils.log(smart_add_tags);		
+		        
+		    }
+		        
 	        var taskName = args.object.summary || null;
-	        var tags = (args.format.text) ? args.format.text.split() : [];
-	        var priority = args.modifier.data || null;
-	        var listName = args.goal.text || defaultListName;
-	        var url = args.instrument.text || null;        
+	        var tags = ((args.format.text) ? args.format.text.split() : null) || smart_add_tags || [];
+	        var priority = args.modifier.data || smart_add_priority || null;
+	        var listName = args.goal.text || smart_add_list || defaultListName;
+	        var url = args.instrument.text || smart_add_url || null;        
+	        
 	        if (url){
 	    	    url = (Utils.trim(url) == "this") ? (CmdUtils.getWindowInsecure().location.href || "") : Utils.trim(url);
 				url = RTM.utils.format_url(url);
@@ -1331,7 +1369,7 @@ if (RTM.isParser2())
 	        	id: "",
 				name: taskName,
 				task: {
-					priority:args.modifier.text||""
+					priority:priority
 				},
 				tags: tags,
 				list_name: listName,
